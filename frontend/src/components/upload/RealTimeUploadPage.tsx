@@ -86,7 +86,7 @@ const RealTimeUploadPage: React.FC = () => {
     onSuccess: (data) => {
       setUploadStatus(`Upload successful: ${data.message}`);
       setUploadProgress(25);
-      setCurrentDataSourceId(data.data_source_id);
+      setCurrentDataSourceId(data.id);
       // Reset processing steps for new upload
       setProcessingSteps([]);
       // Refetch data sources
@@ -235,7 +235,7 @@ const RealTimeUploadPage: React.FC = () => {
                   <Chip 
                     label={`${step.progress}%`}
                     size="small"
-                    color={getStatusColor(step.status) as any}
+                    color={getStatusColor(step.status) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
                     sx={{ ml: 1 }}
                   />
                 </Box>
@@ -507,7 +507,7 @@ const RealTimeUploadPage: React.FC = () => {
                     <Chip
                       icon={getStatusIcon(source.status)}
                       label={source.status}
-                      color={getStatusColor(source.status) as any}
+                      color={getStatusColor(source.status) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
                       size="small"
                     />
                   </Box>

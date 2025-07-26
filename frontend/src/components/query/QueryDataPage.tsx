@@ -249,7 +249,7 @@ const QueryDataPage: React.FC = () => {
           </Box>
           
           <Grid container spacing={1}>
-            {suggestions.suggestions.map((suggestion, index) => (
+            {suggestions.suggestions.map((suggestion: string, index: number) => (
               <Grid item key={index}>
                 <Chip
                   label={suggestion}
@@ -358,7 +358,7 @@ const QueryDataPage: React.FC = () => {
           </Box>
           
           <List>
-            {queryHistory.slice(0, 5).map((query, index) => (
+            {queryHistory.slice(0, 5).map((query: any, index: number) => (
               <React.Fragment key={query.id}>
                 <ListItem
                   button

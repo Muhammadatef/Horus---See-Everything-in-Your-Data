@@ -1,35 +1,215 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
   Card,
   CardContent,
-  CardActions,
   Button,
   Grid,
-  Paper,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
+  Container,
   Chip,
-  Alert,
+  IconButton,
+  Fade,
+  Slide,
+  Zoom,
+  useTheme,
+  alpha,
 } from '@mui/material';
 import {
   Upload as UploadIcon,
   Search as SearchIcon,
   Dashboard as DashboardIcon,
-  CheckCircle as CheckIcon,
-  Speed as SpeedIcon,
+  TrendingUp as TrendingUpIcon,
+  AutoAwesome as AutoAwesomeIcon,
   Security as SecurityIcon,
-  Offline as OfflineIcon,
+  Speed as SpeedIcon,
+  Insights as InsightsIcon,
+  ArrowForward as ArrowForwardIcon,
+  PlayCircleFilled as PlayIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import { healthApi, dataApi } from '../../services/api';
 
+// Animated Counter Component
+const AnimatedCounter: React.FC<{ end: number; suffix?: string; duration?: number }> = ({ 
+  end, 
+  suffix = '', 
+  duration = 2000 
+}) => {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    let startTime: number;
+    const animate = (currentTime: number) => {
+      if (!startTime) startTime = currentTime;
+      const progress = Math.min((currentTime - startTime) / duration, 1);
+      setCount(Math.floor(progress * end));
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    };
+    requestAnimationFrame(animate);
+  }, [end, duration]);
+
+  return <span>{count}{suffix}</span>;
+};
+
+// Feature Card Component
+const FeatureCard: React.FC<{
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  delay: number;
+  color: string;
+}> = ({ icon, title, description, delay, color }) => {
+  return (
+    <Zoom in timeout={800} style={{ transitionDelay: `${delay}ms` }}>
+      <Card
+        sx={{
+          height: '100%',
+          background: 'rgba(255, 255, 255, 0.05)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: 3,
+          transition: 'all 0.4s ease',
+          position: 'relative',
+          overflow: 'hidden',
+          '&:hover': {
+            transform: 'translateY(-8px)',
+            border: `1px solid ${alpha(color, 0.5)}`,
+            boxShadow: `0 20px 40px ${alpha(color, 0.2)}`,
+          },
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: '3px',
+            background: `linear-gradient(90deg, ${color}, transparent)`,
+          },
+        }}
+      >
+        <CardContent sx={{ p: 3 }}>
+          <Box
+            sx={{
+              color: color,
+              mb: 2,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 60,
+              height: 60,
+              borderRadius: 2,
+              background: `${alpha(color, 0.1)}`,
+              border: `1px solid ${alpha(color, 0.2)}`,
+            }}
+          >
+            {icon}
+          </Box>
+          <Typography
+            variant="h6"
+            sx={{
+              color: 'rgba(255, 255, 255, 0.9)',
+              fontWeight: 600,
+              mb: 1,
+            }}
+          >
+            {title}
+          </Typography>
+          <Typography
+            variant="body2"
+            sx={{
+              color: 'rgba(255, 255, 255, 0.7)',
+              lineHeight: 1.6,
+            }}
+          >
+            {description}
+          </Typography>
+        </CardContent>
+      </Card>
+    </Zoom>
+  );
+};
+
+// Quick Action Button
+const QuickActionButton: React.FC<{
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  onClick: () => void;
+  color: string;
+  delay: number;
+}> = ({ icon, title, description, onClick, color, delay }) => {
+  return (
+    <Slide in direction="up" timeout={600} style={{ transitionDelay: `${delay}ms` }}>
+      <Card
+        onClick={onClick}
+        sx={{
+          cursor: 'pointer',
+          background: 'rgba(255, 255, 255, 0.03)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: 3,
+          transition: 'all 0.4s ease',
+          position: 'relative',
+          overflow: 'hidden',
+          '&:hover': {
+            transform: 'translateY(-4px) scale(1.02)',
+            background: `${alpha(color, 0.1)}`,
+            border: `1px solid ${alpha(color, 0.3)}`,
+            boxShadow: `0 15px 30px ${alpha(color, 0.2)}`,
+          },
+        }}
+      >
+        <CardContent sx={{ p: 4, textAlign: 'center' }}>
+          <Box
+            sx={{
+              color: color,
+              mb: 2,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 80,
+              height: 80,
+              borderRadius: 3,
+              background: `${alpha(color, 0.1)}`,
+              border: `2px solid ${alpha(color, 0.2)}`,
+              mx: 'auto',
+              fontSize: '2rem',
+            }}
+          >
+            {icon}
+          </Box>
+          <Typography
+            variant="h6"
+            sx={{
+              color: 'rgba(255, 255, 255, 0.9)',
+              fontWeight: 600,
+              mb: 1,
+            }}
+          >
+            {title}
+          </Typography>
+          <Typography
+            variant="body2"
+            sx={{
+              color: 'rgba(255, 255, 255, 0.6)',
+              lineHeight: 1.5,
+            }}
+          >
+            {description}
+          </Typography>
+        </CardContent>
+      </Card>
+    </Slide>
+  );
+};
+
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
+  const theme = useTheme();
 
   // Check system health
   const { data: healthData, isError: healthError } = useQuery(
@@ -37,7 +217,7 @@ const HomePage: React.FC = () => {
     healthApi.detailed,
     {
       retry: 1,
-      refetchInterval: 30000, // Check every 30 seconds
+      refetchInterval: 30000,
     }
   );
 
@@ -48,224 +228,385 @@ const HomePage: React.FC = () => {
 
   const features = [
     {
-      icon: <SecurityIcon color="primary" />,
+      icon: <SecurityIcon fontSize="large" />,
       title: 'Complete Privacy',
-      description: 'Your data never leaves your machine. Zero cloud dependencies.',
+      description: 'Your data never leaves your machine. Zero cloud dependencies with full local processing.',
+      color: '#4CAF50',
     },
     {
-      icon: <SpeedIcon color="primary" />,
-      title: 'Instant Results',
-      description: 'Ask questions in natural language, get answers in seconds.',
+      icon: <SpeedIcon fontSize="large" />,
+      title: 'Lightning Fast',
+      description: 'Ask questions in natural language and get instant AI-powered insights in seconds.',
+      color: '#2196F3',
     },
     {
-      icon: <OfflineIcon color="primary" />,
-      title: 'Offline Ready',
-      description: 'Works completely offline with local AI models.',
+      icon: <InsightsIcon fontSize="large" />,
+      title: 'Smart Analytics',
+      description: 'Advanced AI automatically understands your data and generates meaningful visualizations.',
+      color: '#FF9800',
     },
   ];
 
   const quickActions = [
     {
-      title: 'Upload Data',
-      description: 'Upload CSV, Excel, JSON, or Parquet files',
-      icon: <UploadIcon />,
-      action: () => navigate('/upload'),
-      color: '#4caf50',
-    },
-    {
-      title: 'Query Data',
-      description: 'Ask questions about your data in natural language',
       icon: <SearchIcon />,
-      action: () => navigate('/query'),
-      color: '#2196f3',
+      title: 'Chat with Horus',
+      description: 'Upload files and ask questions in natural language - ChatGPT style',
+      onClick: () => navigate('/chat'),
+      color: '#DAA520',
     },
     {
-      title: 'View Dashboard',
-      description: 'See insights and visualizations',
+      icon: <UploadIcon />,
+      title: 'Upload Data',
+      description: 'Drag & drop CSV, Excel, JSON, or Parquet files',
+      onClick: () => navigate('/upload'),
+      color: '#4CAF50',
+    },
+    {
       icon: <DashboardIcon />,
-      action: () => navigate('/dashboard'),
-      color: '#ff9800',
+      title: 'Analytics',
+      description: 'Explore insights and interactive visualizations',
+      onClick: () => navigate('/dashboard'),
+      color: '#FF9800',
     },
   ];
 
   const getHealthStatus = () => {
     if (healthError) {
-      return { status: 'error', message: 'System not responding' };
+      return { status: 'error', message: 'System offline', color: '#f44336' };
     }
     
     if (!healthData?.data) {
-      return { status: 'loading', message: 'Checking system status...' };
+      return { status: 'default', message: 'Connecting...', color: '#ff9800' };
     }
 
     const health = healthData.data;
     if (health.status === 'healthy') {
-      return { status: 'success', message: 'All systems operational' };
+      return { status: 'success', message: 'All systems operational', color: '#4caf50' };
     } else {
-      return { status: 'warning', message: 'Some services may be degraded' };
+      return { status: 'warning', message: 'Some services degraded', color: '#ff9800' };
     }
   };
 
   const healthStatus = getHealthStatus();
 
   return (
-    <Box>
+    <Container maxWidth="xl" sx={{ py: 4 }}>
       {/* Hero Section */}
-      <Paper
-        elevation={0}
-        sx={{
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white',
-          p: 6,
-          mb: 4,
-          borderRadius: 2,
-        }}
-      >
-        <Typography variant="h2" component="h1" gutterBottom align="center">
-          Local AI-BI Platform
-        </Typography>
-        <Typography variant="h5" align="center" sx={{ mb: 3, opacity: 0.9 }}>
-          Upload your data, ask questions in plain English, get instant insights
-        </Typography>
-        
-        {/* System Status */}
-        <Box display="flex" justifyContent="center" alignItems="center" gap={2}>
-          <Chip
-            icon={<CheckIcon />}
-            label={healthStatus.message}
-            color={healthStatus.status as any}
-            variant="filled"
-            sx={{ color: 'white', backgroundColor: 'rgba(255,255,255,0.2)' }}
-          />
-          {datasets && (
-            <Chip
-              label={`${datasets.length} datasets available`}
-              variant="outlined"
-              sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.5)' }}
-            />
-          )}
-        </Box>
-      </Paper>
-
-      {/* Quick Actions */}
-      <Typography variant="h4" gutterBottom sx={{ mb: 3 }}>
-        Quick Actions
-      </Typography>
-      
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        {quickActions.map((action, index) => (
-          <Grid item xs={12} md={4} key={index}>
-            <Card
+      <Fade in timeout={1000}>
+        <Box
+          sx={{
+            textAlign: 'center',
+            mb: 8,
+            position: 'relative',
+          }}
+        >
+          <Box
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 3,
+              mb: 4,
+            }}
+          >
+            <Box
               sx={{
-                height: '100%',
-                cursor: 'pointer',
-                transition: 'transform 0.2s, box-shadow 0.2s',
-                '&:hover': {
-                  transform: 'translateY(-4px)',
-                  boxShadow: 4,
+                fontSize: '4rem',
+                background: 'linear-gradient(135deg, #DAA520, #B8860B)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                filter: 'drop-shadow(0 0 20px rgba(184, 134, 11, 0.5))',
+                animation: 'pulse 3s ease-in-out infinite',
+                '@keyframes pulse': {
+                  '0%, 100%': {
+                    filter: 'drop-shadow(0 0 20px rgba(184, 134, 11, 0.5))',
+                  },
+                  '50%': {
+                    filter: 'drop-shadow(0 0 30px rgba(184, 134, 11, 0.8))',
+                  },
                 },
               }}
-              onClick={action.action}
             >
-              <CardContent sx={{ pb: 1 }}>
+              𓂀
+            </Box>
+            <Box>
+              <Typography
+                variant="h1"
+                sx={{
+                  background: 'linear-gradient(135deg, #DAA520, #B8860B)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  fontWeight: 800,
+                  fontSize: { xs: '3rem', md: '4rem', lg: '5rem' },
+                  letterSpacing: '-0.02em',
+                  lineHeight: 1,
+                }}
+              >
+                Horus AI
+              </Typography>
+              <Typography
+                variant="h4"
+                sx={{
+                  color: 'rgba(255, 255, 255, 0.8)',
+                  fontWeight: 300,
+                  fontSize: { xs: '1.2rem', md: '1.5rem' },
+                  mt: 1,
+                }}
+              >
+                All-seeing Business Intelligence
+              </Typography>
+            </Box>
+          </Box>
+
+          <Typography
+            variant="h5"
+            sx={{
+              color: 'rgba(255, 255, 255, 0.7)',
+              fontWeight: 400,
+              lineHeight: 1.4,
+              mb: 4,
+              maxWidth: '800px',
+              mx: 'auto',
+            }}
+          >
+            Upload your data, ask questions in plain English, and get instant AI-powered insights 
+            with complete privacy on your local machine.
+          </Typography>
+
+          {/* Status and Stats */}
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: 4,
+              flexWrap: 'wrap',
+              mb: 6,
+            }}
+          >
+            <Chip
+              icon={
                 <Box
                   sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    mb: 2,
-                    color: action.color,
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    background: healthStatus.color,
+                    animation: healthStatus.status === 'success' ? 'pulse 2s infinite' : 'none',
                   }}
-                >
-                  {action.icon}
-                  <Typography variant="h6" sx={{ ml: 1 }}>
-                    {action.title}
-                  </Typography>
-                </Box>
-                <Typography variant="body2" color="text.secondary">
-                  {action.description}
-                </Typography>
-              </CardContent>
-              <CardActions>
-                <Button size="small" sx={{ color: action.color }}>
-                  Get Started
-                </Button>
-              </CardActions>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
+                />
+              }
+              label={healthStatus.message}
+              sx={{
+                background: 'rgba(255, 255, 255, 0.1)',
+                color: 'rgba(255, 255, 255, 0.9)',
+                border: `1px solid ${alpha(healthStatus.color, 0.3)}`,
+                fontWeight: 500,
+              }}
+            />
+            {datasets && (
+              <Chip
+                label={`${datasets.length} Datasets Ready`}
+                sx={{
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  fontWeight: 500,
+                }}
+              />
+            )}
+            <Chip
+              label="100% Local & Private"
+              sx={{
+                background: 'rgba(76, 175, 80, 0.2)',
+                color: 'rgba(255, 255, 255, 0.9)',
+                border: '1px solid rgba(76, 175, 80, 0.3)',
+                fontWeight: 500,
+              }}
+            />
+          </Box>
+
+          {/* CTA Button */}
+          <Button
+            variant="contained"
+            size="large"
+            endIcon={<ArrowForwardIcon />}
+            onClick={() => navigate('/chat')}
+            sx={{
+              background: 'linear-gradient(135deg, #DAA520, #B8860B)',
+              color: 'white',
+              px: 4,
+              py: 2,
+              fontSize: '1.1rem',
+              fontWeight: 600,
+              borderRadius: 3,
+              textTransform: 'none',
+              boxShadow: '0 8px 25px rgba(184, 134, 11, 0.3)',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #B8860B, #DAA520)',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 12px 35px rgba(184, 134, 11, 0.4)',
+              },
+            }}
+          >
+            Start Chatting
+          </Button>
+        </Box>
+      </Fade>
+
+      {/* Quick Actions */}
+      <Box sx={{ mb: 8 }}>
+        <Typography
+          variant="h3"
+          sx={{
+            color: 'rgba(255, 255, 255, 0.9)',
+            fontWeight: 700,
+            mb: 4,
+            textAlign: 'center',
+          }}
+        >
+          Quick Actions
+        </Typography>
+        <Grid container spacing={4}>
+          {quickActions.map((action, index) => (
+            <Grid item xs={12} md={4} key={action.title}>
+              <QuickActionButton
+                {...action}
+                delay={index * 200}
+              />
+            </Grid>
+          ))}
+        </Grid>
+      </Box>
 
       {/* Features */}
-      <Typography variant="h4" gutterBottom sx={{ mb: 3 }}>
-        Why Choose Local AI-BI?
-      </Typography>
-      
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        {features.map((feature, index) => (
-          <Grid item xs={12} md={4} key={index}>
-            <Paper sx={{ p: 3, height: '100%' }}>
-              <Box display="flex" alignItems="center" mb={2}>
-                {feature.icon}
-                <Typography variant="h6" sx={{ ml: 1 }}>
-                  {feature.title}
-                </Typography>
-              </Box>
-              <Typography variant="body2" color="text.secondary">
-                {feature.description}
-              </Typography>
-            </Paper>
-          </Grid>
-        ))}
-      </Grid>
-
-      {/* Getting Started */}
-      <Paper sx={{ p: 3 }}>
-        <Typography variant="h5" gutterBottom>
-          Getting Started
+      <Box sx={{ mb: 8 }}>
+        <Typography
+          variant="h3"
+          sx={{
+            color: 'rgba(255, 255, 255, 0.9)',
+            fontWeight: 700,
+            mb: 2,
+            textAlign: 'center',
+          }}
+        >
+          Why Choose Horus?
         </Typography>
-        <Typography variant="body1" paragraph>
-          Welcome to your local AI-powered Business Intelligence platform! Here's how to get started:
+        <Typography
+          variant="h6"
+          sx={{
+            color: 'rgba(255, 255, 255, 0.6)',
+            fontWeight: 400,
+            mb: 6,
+            textAlign: 'center',
+            maxWidth: '600px',
+            mx: 'auto',
+          }}
+        >
+          Experience the future of business intelligence with cutting-edge AI technology
         </Typography>
-        
-        <List>
-          <ListItem>
-            <ListItemIcon>
-              <Typography variant="h6" color="primary">1</Typography>
-            </ListItemIcon>
-            <ListItemText
-              primary="Upload Your Data"
-              secondary="Drag and drop CSV, Excel, JSON, or Parquet files. We'll automatically clean and process them."
-            />
-          </ListItem>
-          <ListItem>
-            <ListItemIcon>
-              <Typography variant="h6" color="primary">2</Typography>
-            </ListItemIcon>
-            <ListItemText
-              primary="Ask Questions"
-              secondary='Use natural language like "How many active users do we have?" or "Show me sales by region".'
-            />
-          </ListItem>
-          <ListItem>
-            <ListItemIcon>
-              <Typography variant="h6" color="primary">3</Typography>
-            </ListItemIcon>
-            <ListItemText
-              primary="Get Insights"
-              secondary="Receive instant answers with automatic visualizations and charts."
-            />
-          </ListItem>
-        </List>
+        <Grid container spacing={4}>
+          {features.map((feature, index) => (
+            <Grid item xs={12} md={4} key={feature.title}>
+              <FeatureCard
+                {...feature}
+                delay={index * 300}
+              />
+            </Grid>
+          ))}
+        </Grid>
+      </Box>
 
-        {/* Demo File Notice */}
-        <Alert severity="info" sx={{ mt: 2 }}>
-          <Typography variant="body2">
-            <strong>Try the demo:</strong> Upload the sample user analytics file from{' '}
-            <code>data/samples/user_analytics.csv</code> and ask:{' '}
-            <em>"How many active users do we have?"</em>
+      {/* Statistics */}
+      <Fade in timeout={1200} style={{ transitionDelay: '800ms' }}>
+        <Box
+          sx={{
+            background: 'rgba(255, 255, 255, 0.03)',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: 4,
+            p: 6,
+            textAlign: 'center',
+            position: 'relative',
+            overflow: 'hidden',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '2px',
+              background: 'linear-gradient(90deg, #DAA520, #B8860B, #DAA520)',
+            },
+          }}
+        >
+          <Typography
+            variant="h4"
+            sx={{
+              color: 'rgba(255, 255, 255, 0.9)',
+              fontWeight: 700,
+              mb: 4,
+            }}
+          >
+            Powered by Ancient Wisdom, Modern Technology
           </Typography>
-        </Alert>
-      </Paper>
-    </Box>
+          <Grid container spacing={4}>
+            <Grid item xs={12} sm={4}>
+              <Typography
+                variant="h2"
+                sx={{
+                  background: 'linear-gradient(135deg, #DAA520, #B8860B)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  fontWeight: 800,
+                  mb: 1,
+                }}
+              >
+                <AnimatedCounter end={100} suffix="%" />
+              </Typography>
+              <Typography variant="h6" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                Local & Private
+              </Typography>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <Typography
+                variant="h2"
+                sx={{
+                  background: 'linear-gradient(135deg, #DAA520, #B8860B)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  fontWeight: 800,
+                  mb: 1,
+                }}
+              >
+                <AnimatedCounter end={5} suffix="s" />
+              </Typography>
+              <Typography variant="h6" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                Query Response
+              </Typography>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <Typography
+                variant="h2"
+                sx={{
+                  background: 'linear-gradient(135deg, #DAA520, #B8860B)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  fontWeight: 800,
+                  mb: 1,
+                }}
+              >
+                <AnimatedCounter end={24} suffix="/7" />
+              </Typography>
+              <Typography variant="h6" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                Always Available
+              </Typography>
+            </Grid>
+          </Grid>
+        </Box>
+      </Fade>
+    </Container>
   );
 };
 

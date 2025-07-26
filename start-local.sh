@@ -13,9 +13,22 @@ check_requirements() {
         exit 1
     fi
     
-    # Check Docker Compose
-    if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
+    # Check Docker Compose (support both v1 and v2)
+    if command -v docker-compose &> /dev/null; then
+        COMPOSE_CMD="docker-compose"
+    elif docker compose version &> /dev/null; then
+        COMPOSE_CMD="docker compose"
+    else
         echo "❌ Docker Compose not found. Please install Docker Compose."
+        exit 1
+    fi
+    
+    # Check Docker permissions
+    if ! docker ps &> /dev/null; then
+        echo "❌ Docker permission denied. Please run:"
+        echo "   sudo usermod -aG docker $USER"
+        echo "   newgrp docker"
+        echo "   Then restart this script."
         exit 1
     fi
     
@@ -88,11 +101,11 @@ start_services() {
     
     # Pull latest images
     echo "📥 Pulling Docker images..."
-    docker-compose pull
+    $COMPOSE_CMD pull
     
     # Start services
     echo "🏗️  Building and starting services..."
-    docker-compose up -d --build
+    $COMPOSE_CMD up -d --build
     
     echo "⏳ Waiting for services to be ready..."
     
@@ -145,9 +158,9 @@ show_status() {
     echo "   • 'Which users haven't logged in recently?'"
     echo ""
     echo "🔧 Useful commands:"
-    echo "   • Stop platform: docker-compose down"
-    echo "   • View logs: docker-compose logs -f"
-    echo "   • Restart service: docker-compose restart [service-name]"
+    echo "   • Stop platform: $COMPOSE_CMD down"
+    echo "   • View logs: $COMPOSE_CMD logs -f"
+    echo "   • Restart service: $COMPOSE_CMD restart [service-name]"
     echo ""
     
     # Open browser (optional)

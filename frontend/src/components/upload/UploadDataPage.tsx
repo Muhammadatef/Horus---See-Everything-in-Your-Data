@@ -220,7 +220,7 @@ const UploadDataPage: React.FC = () => {
                     <Chip
                       icon={getStatusIcon(source.status)}
                       label={source.status}
-                      color={getStatusColor(source.status) as any}
+                      color={getStatusColor(source.status) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
                       size="small"
                     />
                   </Box>
@@ -306,7 +306,7 @@ const UploadDataPage: React.FC = () => {
           <ListItem>
             <ListItemIcon>
               <CheckIcon color="success" />
-            </ListItemText>
+            </ListItemIcon>
             <ListItemText
               primary="Instant Analysis"
               secondary="Once processed, you can immediately start asking questions about your data"

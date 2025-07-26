@@ -1,218 +1,396 @@
-# Local AI-BI Platform
+# 🔺 Horus - The All-Seeing Eye of Business Intelligence
 
-**Upload your data, ask questions in plain English, get instant insights**
+*Divine insights from your data, running entirely on your local machine*
 
-A complete local Business Intelligence platform that runs entirely on your machine with no cloud dependencies. Upload any data format (CSV, Excel, JSON, Parquet) and query it using natural language powered by local AI models.
+![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+![Docker](https://img.shields.io/badge/docker-ready-blue.svg)
+![Local](https://img.shields.io/badge/deployment-local--only-orange.svg)
 
-## 🚀 Quick Start
+## 📖 Overview
 
-### One-Command Setup
-```bash
-# Clone and start everything
-git clone <your-repo-url>
-cd local-ai-bi
-./start-local.sh
-```
+**Horus** is an intelligent, plug-and-play data platform that runs entirely on your local PC. Upload any data format, ask questions in plain English, and get instant insights with beautiful visualizations - all without sending your data to the cloud.
 
-**What the startup script does:**
-1. ✅ Checks system requirements
-2. 📥 Downloads required Docker images
-3. 🤖 Downloads LLM models (Llama 2, CodeLlama)
-4. 🏗️ Starts all services
-5. 📊 Sets up sample data
-6. 🌐 Opens browser to http://localhost:3000
+### 🎯 Core Value Proposition
 
-### System Requirements
-- **Minimum**: 8GB RAM, 4 cores, 50GB free space
-- **Recommended**: 16GB+ RAM, 8 cores, 100GB SSD
-- **Docker**: Latest version installed
+**"Upload your data, ask questions in plain English, get divine insights"**
 
-## 🎯 Demo Walkthrough
-
-1. **Start the platform**: `./start-local.sh`
-2. **Open**: http://localhost:3000
-3. **Upload**: `data/samples/user_analytics.csv`
-4. **Ask**: *"How many active users do we have?"*
-5. **Get**: *"**15 active users**"* + beautiful pie chart visualization
-
-### Sample Questions to Try
-- "How many active users do we have?"
-- "Show me user distribution by region" 
-- "What's our average monthly spending?"
-- "How many premium users are there?"
+- ✅ **100% Local & Offline** - Your data never leaves your machine
+- ✅ **Zero Cloud Dependencies** - No API costs or internet required
+- ✅ **Universal Data Support** - CSV, Excel, JSON, Parquet, XML, and more
+- ✅ **Natural Language Queries** - Ask questions like "What are our top customers?"
+- ✅ **Instant Visualizations** - Auto-generated charts and dashboards
+- ✅ **Real-time Processing** - Live updates as your data is analyzed
+- ✅ **Domain Intelligence** - Adapts to any business domain (telecom, healthcare, finance, etc.)
 
 ## 🏗️ Architecture
 
-### Complete Local Stack
-```yaml
-Services:
-  - PostgreSQL: Local analytical database
-  - Redis: Caching and session management  
-  - MinIO: Local file storage (S3-compatible)
-  - Ollama: Local LLM (Llama 2, CodeLlama)
-  - FastAPI: Python backend service
-  - React: Frontend interface
-  - Apache ECharts: Visualization library
+### The All-Seeing Eye Stack
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    🔺 HORUS PLATFORM                        │
+├─────────────────────────────────────────────────────────────┤
+│  React Frontend  │  Real-time UI with Material Design      │
+│  FastAPI Backend │  Python async API with WebSocket        │
+│  PostgreSQL      │  Analytical database for insights       │
+│  Redis           │  Caching and session management          │
+│  MinIO           │  Local S3-compatible file storage        │
+│  Ollama + LLMs   │  Local AI: Llama2, CodeLlama, Mistral  │
+│  Apache ECharts  │  Beautiful, interactive visualizations  │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### Data Flow
-1. **Upload** → File stored in MinIO → Auto-processed → PostgreSQL
-2. **Query** → Natural language → Ollama LLM → SQL generation → Execute → Visualize
+### 🛠️ Complete Tech Stack
 
-## 🔧 Development
+**Backend Services:**
+- **FastAPI** - Modern Python async web framework
+- **PostgreSQL** - Robust analytical database
+- **Redis** - High-performance caching
+- **MinIO** - S3-compatible local object storage
+- **Ollama** - Local LLM inference engine
 
-### Daily Commands
+**AI & Analytics:**
+- **Llama2 7B** - Natural language understanding
+- **CodeLlama 7B** - SQL generation from plain English
+- **Pandas** - Data manipulation and analysis
+- **SQLAlchemy** - Database ORM with async support
+- **Great Expectations** - Data quality validation
+
+**Frontend:**
+- **React 18** - Modern UI framework
+- **TypeScript** - Type-safe development
+- **Material-UI** - Professional component library
+- **Apache ECharts** - Interactive visualizations
+- **WebSocket** - Real-time updates
+
+**Infrastructure:**
+- **Docker Compose** - One-command deployment
+- **Apache Airflow** - Workflow orchestration
+- **NGINX** - Production web server (optional)
+
+## 🚀 Quick Start
+
+### Prerequisites
 ```bash
-# Start platform
-./start-local.sh
-
-# View logs
-docker-compose logs -f backend
-
-# Restart service
-docker-compose restart backend
-
-# Stop platform  
-./stop-local.sh
+# System Requirements
+- RAM: 8GB minimum (16GB recommended)
+- Storage: 50GB free space (100GB for optimal performance)
+- CPU: 4 cores minimum (8+ cores recommended)
+- Docker: Latest version installed
 ```
 
-### API Endpoints
-- **Frontend**: http://localhost:3000
-- **API Docs**: http://localhost:8000/docs
-- **Health Check**: http://localhost:8000/health
-- **File Admin**: http://localhost:9001
+### One-Command Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/your-org/horus-ai-bi.git
+cd horus-ai-bi
+
+# Start the complete platform
+./start-horus.sh
+
+# That's it! 🎉
+# Open http://localhost:3000 in your browser
+```
+
+### Manual Installation
+
+```bash
+# 1. Start all services
+docker-compose up -d
+
+# 2. Wait for services to initialize (2-3 minutes)
+docker-compose logs -f
+
+# 3. Initialize sample data (optional)
+docker-compose exec backend python scripts/init_sample_data.py
+
+# 4. Access the platform
+open http://localhost:3000
+```
+
+## 📊 How to Use Horus
+
+### 1. Upload Your Data
+- **Drag & Drop**: Simply drag any supported file into the upload area
+- **Supported Formats**: CSV, Excel (.xls/.xlsx), JSON, Parquet, XML, TSV
+- **Real-time Processing**: Watch as Horus analyzes your data structure
+- **Intelligent Cleaning**: Automatic data type detection and cleaning
+
+### 2. Ask Questions in Plain English
+```
+Examples:
+• "What are our top 10 customers by revenue?"
+• "Show me sales trends over the last 6 months"
+• "Which products have the highest profit margins?"
+• "Compare performance between different regions"
+• "What's the average customer lifetime value?"
+```
+
+### 3. Get Instant Insights
+- **Smart Visualizations**: Auto-selected charts based on your question
+- **Business Answers**: Natural language explanations of results
+- **Interactive Dashboards**: Drill down into your data
+- **Export Options**: Save charts and reports
+
+### 4. Domain Intelligence
+Horus automatically adapts to your business domain:
+
+**Telecom Data**: Recognizes customer usage, network metrics, billing patterns
+**Healthcare**: Understands patient records, treatments, outcomes
+**Retail**: Identifies sales patterns, inventory, customer behavior
+**Finance**: Analyzes transactions, risk metrics, performance indicators
+
+## 🔧 Configuration
+
+### Environment Variables
+```bash
+# Database
+DATABASE_URL=postgresql://aibi_user:local_password@postgres:5432/aibi
+
+# AI Models
+OLLAMA_URL=http://ollama:11434
+OLLAMA_MODEL_CHAT=llama2:7b-chat
+OLLAMA_MODEL_CODE=codellama:7b
+
+# Storage
+MINIO_URL=http://minio:9000
+MINIO_ACCESS_KEY=minioadmin
+MINIO_SECRET_KEY=minioadmin123
+
+# File Limits
+MAX_UPLOAD_SIZE=100MB
+ALLOWED_FILE_TYPES=csv,xlsx,json,parquet,xml,tsv
+```
+
+### Resource Optimization
+```yaml
+# For 8GB RAM systems
+ollama:
+  environment:
+    - OLLAMA_NUM_PARALLEL=1
+    - OLLAMA_MAX_LOADED_MODELS=1
+
+# For 16GB+ RAM systems  
+ollama:
+  environment:
+    - OLLAMA_NUM_PARALLEL=2
+    - OLLAMA_MAX_LOADED_MODELS=2
+```
 
 ## 📁 Project Structure
 
 ```
-local-ai-bi/
-├── docker-compose.yml          # All services definition
-├── start-local.sh             # One-click startup
-├── backend/                   # FastAPI application
+horus-ai-bi/
+├── 🐳 docker-compose.yml              # Complete service orchestration
+├── 🚀 start-horus.sh                  # One-click startup script
+├── 📚 README.md                       # This file
+├── 📄 CLAUDE.md                       # Project instructions
+│
+├── 🔧 backend/                        # FastAPI Backend
 │   ├── app/
-│   │   ├── api/              # REST endpoints
-│   │   ├── services/         # Core business logic
-│   │   ├── models/           # Data models
-│   │   └── utils/            # Helper functions
-│   └── requirements.txt
-├── frontend/                  # React application
+│   │   ├── 🌐 api/v1/endpoints/       # REST API endpoints
+│   │   ├── ⚙️ services/               # Core business logic
+│   │   │   ├── enhanced_data_ingestion.py    # Smart data processing
+│   │   │   ├── enhanced_llm_service.py       # AI query understanding
+│   │   │   ├── enhanced_query_processor.py   # Natural language queries
+│   │   │   ├── visualization_engine.py       # Auto-chart generation
+│   │   │   └── websocket_manager.py          # Real-time updates
+│   │   ├── 📊 models/                 # Database models
+│   │   ├── 🔧 utils/                  # Helper functions
+│   │   └── ⚡ config.py               # Configuration settings
+│   ├── 🐳 Dockerfile
+│   └── 📋 requirements.txt
+│
+├── 🎨 frontend/                       # React Frontend
 │   ├── src/
-│   │   ├── components/       # UI components
-│   │   ├── services/         # API clients
-│   │   └── hooks/            # React hooks
-│   └── package.json
-├── data/                      # Local data storage
-│   ├── uploads/              # User uploaded files
-│   ├── processed/            # Cleaned data
-│   └── samples/              # Sample datasets
-└── docs/                      # Documentation
+│   │   ├── 🧩 components/             # UI components
+│   │   │   ├── upload/                # Data upload interface
+│   │   │   ├── query/                 # Query interface
+│   │   │   ├── visualization/         # Chart components
+│   │   │   └── common/                # Shared components
+│   │   ├── 🔧 services/               # API clients
+│   │   ├── 🎣 hooks/                  # React hooks
+│   │   └── 🛠️ utils/                  # Helper functions
+│   ├── 🐳 Dockerfile
+│   └── 📦 package.json
+│
+├── 🌊 airflow/                        # Workflow Orchestration
+│   ├── dags/                          # Data processing workflows
+│   └── config/
+│
+├── 💾 data/                           # Local Data Storage
+│   ├── uploads/                       # User uploaded files
+│   ├── processed/                     # Cleaned data
+│   └── samples/                       # Sample datasets
+│
+└── 📖 docs/                           # Documentation
+    ├── user-guide.md
+    ├── api-docs.md
+    └── troubleshooting.md
 ```
 
-## ✨ Features
+## 🌟 Key Features
 
-### Universal Data Ingestion
-- **Drag & Drop Upload**: CSV, Excel, JSON, Parquet support
-- **Auto-Detection**: File format and delimiter detection
-- **Smart Cleaning**: Removes duplicates, handles missing values
-- **Schema Intelligence**: Generates business-friendly descriptions
+### 🧠 Intelligent Data Understanding
+- **Auto-Detection**: Recognizes file formats and data types
+- **Smart Cleaning**: Handles missing values and inconsistencies  
+- **Schema Generation**: Creates business-friendly descriptions
+- **Sample Questions**: Suggests relevant queries for your data
 
-### Natural Language Queries
-- **Local LLM**: Powered by Ollama (Llama 2, CodeLlama)
+### 💬 Natural Language Processing
+- **Business Intent**: Understands what you really want to know
+- **Context Awareness**: Learns your domain vocabulary
 - **SQL Generation**: Converts questions to optimized queries
-- **Context Aware**: Understands your data schema
-- **Safe Execution**: Prevents dangerous operations
+- **Multi-Language**: Support for business terminology
 
-### Instant Visualizations
-- **Auto-Charts**: Intelligently selects best chart type
-- **Interactive**: Built with Apache ECharts
-- **Multiple Types**: Pie, bar, line, scatter, metric cards
-- **Export Ready**: PNG, PDF, Excel formats
+### 📊 Advanced Visualizations
+- **Auto-Selection**: Chooses the best chart for your data
+- **Interactive Charts**: Zoom, filter, and drill-down capabilities
+- **Multiple Types**: Bar, line, pie, scatter, histogram, and more
+- **Export Ready**: High-quality exports for presentations
 
-### Complete Privacy
-- **Offline First**: Works without internet connection
-- **Local Storage**: Data never leaves your machine
-- **No Cloud Costs**: Zero ongoing fees
-- **Full Control**: Customize and modify as needed
+### ⚡ Real-Time Experience
+- **Live Updates**: See processing status in real-time
+- **WebSocket**: Instant feedback during data analysis
+- **Progress Tracking**: Know exactly what's happening
+- **Error Handling**: Clear messages if something goes wrong
 
-## 🎛️ Configuration
+## 🎯 Use Cases
 
-### Environment Variables
-```bash
-# Backend
-DATABASE_URL=postgresql://aibi_user:local_password@postgres:5432/aibi
-OLLAMA_URL=http://ollama:11434
-MAX_UPLOAD_SIZE=100MB
-
-# Frontend  
-REACT_APP_API_URL=http://localhost:8000
+### 📈 Small Business Analytics
+```
+Scenario: Local retail store with sales data
+Questions: "Which products sell best on weekends?"
+Result: Instant insights without hiring a data analyst
 ```
 
-### Docker Compose Services
-- **postgres**: Database (port 5432)
-- **redis**: Cache (port 6379)  
-- **minio**: File storage (ports 9000, 9001)
-- **ollama**: LLM service (port 11434)
-- **backend**: API server (port 8000)
-- **frontend**: Web interface (port 3000)
+### 🏥 Healthcare Research
+```
+Scenario: Medical research with patient data
+Questions: "What factors correlate with treatment success?"
+Result: Statistical analysis with publication-ready charts
+```
 
-## 🚨 Troubleshooting
+### 📱 Telecom Operations
+```
+Scenario: Network performance and customer usage data
+Questions: "Which cell towers have the highest data usage?"
+Result: Network optimization insights and usage patterns
+```
+
+### 💼 Consulting Projects
+```
+Scenario: Client data analysis for recommendations
+Questions: "What's driving customer churn in region X?"
+Result: Professional client reports in minutes
+```
+
+## 🔒 Privacy & Security
+
+### Data Protection
+- **Local Processing**: Data never leaves your machine
+- **No Cloud APIs**: Zero external dependencies
+- **Encrypted Storage**: Local data encryption at rest
+- **Access Control**: User session management
+
+### Compliance Ready
+- **GDPR Compliant**: Data sovereignty maintained
+- **HIPAA Compatible**: Healthcare data stays local
+- **SOX Friendly**: Financial data never exposed
+- **Custom Policies**: Implement your own security rules
+
+## 🆘 Troubleshooting
 
 ### Common Issues
 
-**Port conflicts:**
+**Services won't start:**
 ```bash
-lsof -i :3000
-kill -9 [PID]
+# Check Docker status
+docker ps
+docker-compose logs
+
+# Restart services
+docker-compose down
+docker-compose up -d
 ```
 
-**Docker out of space:**
+**LLM models not loading:**
 ```bash
-docker system prune -a --volumes
+# Check Ollama status
+docker-compose exec ollama ollama list
+
+# Pull required models
+docker-compose exec ollama ollama pull llama2:7b-chat
+docker-compose exec ollama ollama pull codellama:7b
 ```
 
-**Services not starting:**
+**Frontend connection issues:**
 ```bash
-docker-compose logs [service-name]
-docker-compose restart [service-name]
+# Check backend API
+curl http://localhost:8000/api/v1/health
+
+# Check CORS settings in backend/app/config.py
 ```
 
-**LLM not responding:**
+### Performance Optimization
+
+**For Low Memory Systems (8GB):**
+- Use smaller models: `llama2:7b-q4_0` instead of `llama2:7b-chat`
+- Limit concurrent connections in docker-compose.yml
+- Increase swap space on your system
+
+**For High Performance (32GB+):**
+- Use larger models: `llama2:13b-chat`
+- Enable GPU acceleration if available
+- Increase worker processes
+
+## 🤝 Contributing
+
+We welcome contributions! See our [Contributing Guide](docs/CONTRIBUTING.md) for details.
+
+### Development Setup
 ```bash
-docker exec aibi-ollama ollama list
-docker exec aibi-ollama ollama pull llama2:7b-chat
+# Backend development
+cd backend
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+
+# Frontend development  
+cd frontend
+npm install
+npm start
 ```
 
-## 📊 Success Metrics
+## 📜 License
 
-### Performance Goals
-- ⏱️ **Startup Time**: Platform ready in < 2 minutes
-- 🚀 **Query Speed**: < 5 seconds for simple queries
-- 📁 **File Support**: Up to 100MB uploads
-- 💾 **Resource Usage**: < 4GB total memory
+MIT License - see [LICENSE](LICENSE) file for details.
 
-### User Experience
-- ⚡ **Time to Insight**: < 3 minutes from upload to visualization
-- 🎯 **Query Accuracy**: > 90% natural language success rate
-- 📊 **Auto-Visualization**: Appropriate charts generated automatically
-- 👥 **Learning Curve**: Non-technical users productive in < 30 minutes
+## 🔗 Links
 
-## 🎯 Target Use Cases
+- **Documentation**: [docs/](docs/)
+- **API Reference**: [localhost:8000/docs](http://localhost:8000/docs) (when running)
+- **Issue Tracker**: [GitHub Issues](https://github.com/your-org/horus-ai-bi/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/your-org/horus-ai-bi/discussions)
 
-- **Small Businesses**: Sensitive data analysis without cloud costs
-- **Consultants**: Portable BI for client work  
-- **Researchers**: Academic/scientific data analysis
-- **Enterprises**: Proof-of-concept before cloud deployment
-- **Regulated Industries**: Healthcare, finance with strict data policies
+## 🙏 Acknowledgments
 
-## 🔮 Roadmap
-
-- [ ] **Dashboard Builder**: Save and organize visualizations
-- [ ] **Advanced Analytics**: Statistical analysis, forecasting
-- [ ] **Data Connections**: Direct database connections
-- [ ] **Collaboration**: Share insights and reports
-- [ ] **Mobile Support**: Responsive design for tablets
-- [ ] **Plugin System**: Custom data sources and visualizations
+- **Ollama Team** - Local LLM inference
+- **FastAPI** - Modern Python web framework
+- **Apache ECharts** - Beautiful visualizations
+- **Material-UI** - Professional React components
+- **PostgreSQL** - Robust database engine
 
 ---
 
-**Built with ❤️ for complete data privacy and local control**
+<div align="center">
+
+**🔺 Horus - The All-Seeing Eye of Business Intelligence**
+
+*Built with ❤️ for data privacy and local intelligence*
+
+[⭐ Star us on GitHub](https://github.com/your-org/horus-ai-bi) | [📖 Read the Docs](docs/) | [💬 Join Discussions](https://github.com/your-org/horus-ai-bi/discussions)
+
+</div>

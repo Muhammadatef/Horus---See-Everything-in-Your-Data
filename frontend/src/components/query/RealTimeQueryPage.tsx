@@ -85,7 +85,7 @@ const RealTimeQueryPage: React.FC = () => {
   // Get query suggestions
   const { data: querySuggestions } = useQuery(
     ['querySuggestions', selectedDataset, question],
-    () => selectedDataset ? queryApi.getSuggestions(selectedDataset, question) : { suggestions: [] },
+    () => selectedDataset ? queryApi.getSuggestions(selectedDataset) : { suggestions: [] },
     { 
       enabled: !!selectedDataset,
       staleTime: 30000 // Cache for 30 seconds
@@ -151,8 +151,7 @@ const RealTimeQueryPage: React.FC = () => {
 
     queryMutation.mutate({
       dataset_id: selectedDataset,
-      question: question.trim(),
-      user_id: 'default'
+      question: question.trim()
     });
   };
 

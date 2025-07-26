@@ -203,8 +203,9 @@ const EnhancedVisualization: React.FC<EnhancedVisualizationProps> = ({
             <tbody>
               {data.slice(0, 100).map((row: any, rowIndex: number) => (
                 <tr key={rowIndex} style={{ 
-                  '&:hover': { backgroundColor: '#f5f5f5' }
-                }}>
+                  cursor: 'pointer'
+                }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f5f5'}
+                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
                   {columns.map((col: any, colIndex: number) => (
                     <td key={colIndex} style={{ 
                       padding: '8px 12px', 

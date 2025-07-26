@@ -986,3 +986,157 @@ class EnhancedDataIngestionService:
                 return "VARCHAR(2000)"
             else:
                 return "TEXT"
+    
+    async def _process_excel(self, file_path: str, options: Dict[str, Any] = None) -> pd.DataFrame:
+        """Process Excel files (.xls, .xlsx)"""
+        options = options or {}
+        
+        try:
+            # Try reading all sheets first
+            excel_file = pd.ExcelFile(file_path)
+            
+            if len(excel_file.sheet_names) == 1:
+                # Single sheet
+                df = pd.read_excel(file_path, sheet_name=0)
+            else:
+                # Multiple sheets - combine or take first
+                sheet_name = options.get('sheet_name', 0)
+                df = pd.read_excel(file_path, sheet_name=sheet_name)
+            
+            logger.info(f"Loaded Excel file: {len(df)} rows, {len(df.columns)} columns")
+            return df
+            
+        except Exception as e:
+            logger.error(f"Error processing Excel file: {e}")
+            raise ValueError(f"Could not process Excel file: {e}")
+    
+    async def _process_json(self, file_path: str, options: Dict[str, Any] = None) -> pd.DataFrame:
+        """Process JSON files"""
+        options = options or {}
+        
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            # Handle different JSON structures
+            if isinstance(data, list):
+                df = pd.DataFrame(data)
+            elif isinstance(data, dict):
+                # Try to find the main data array
+                possible_keys = ['data', 'records', 'items', 'results']
+                for key in possible_keys:
+                    if key in data and isinstance(data[key], list):
+                        df = pd.DataFrame(data[key])
+                        break
+                else:
+                    # Flatten the dict
+                    df = pd.json_normalize(data)
+            else:
+                df = pd.DataFrame([data])
+            
+            logger.info(f"Loaded JSON file: {len(df)} rows, {len(df.columns)} columns")
+            return df
+            
+        except Exception as e:
+            logger.error(f"Error processing JSON file: {e}")
+            raise ValueError(f"Could not process JSON file: {e}")
+    
+    async def _process_parquet(self, file_path: str, options: Dict[str, Any] = None) -> pd.DataFrame:
+        """Process Parquet files"""
+        options = options or {}
+        
+        try:
+            df = pd.read_parquet(file_path)
+            logger.info(f"Loaded Parquet file: {len(df)} rows, {len(df.columns)} columns")
+            return df
+            
+        except Exception as e:
+            logger.error(f"Error processing Parquet file: {e}")
+            raise ValueError(f"Could not process Parquet file: {e}")
+    
+    async def _process_database(self, config: Dict[str, Any]) -> pd.DataFrame:
+        """Process database sources"""
+        connection_string = config.get('connection_string', config.get('source', ''))
+        table = config.get('table')
+        query = config.get('query')
+        limit = config.get('limit', 1000)
+        
+        try:
+            if query:
+                # Custom query
+                sql_query = f"SELECT * FROM ({query}) AS subquery LIMIT {limit}"
+            elif table:
+                # Table query
+                sql_query = f"SELECT * FROM {table} LIMIT {limit}"
+            else:
+                raise ValueError("Either 'table' or 'query' must be specified")
+            
+            # Create engine and read data
+            engine = create_engine(connection_string)
+            df = pd.read_sql(sql_query, engine)
+            engine.dispose()
+            
+            logger.info(f"Loaded database data: {len(df)} rows, {len(df.columns)} columns")
+            return df
+            
+        except Exception as e:
+            logger.error(f"Error processing database source: {e}")
+            raise ValueError(f"Could not process database source: {e}")
+    
+    async def _process_api(self, config: Dict[str, Any]) -> pd.DataFrame:
+        """Process API sources"""
+        url = config.get('url', config.get('source', ''))
+        headers = config.get('headers', {})
+        params = config.get('params', {})
+        timeout = config.get('timeout', 30)
+        
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(url, headers=headers, params=params, timeout=timeout)
+                response.raise_for_status()
+                
+                data = response.json()
+                
+                # Handle different API response structures
+                if isinstance(data, list):
+                    df = pd.DataFrame(data)
+                elif isinstance(data, dict):
+                    # Try to find the main data array
+                    possible_keys = ['data', 'records', 'items', 'results', 'rows']
+                    for key in possible_keys:
+                        if key in data and isinstance(data[key], list):
+                            df = pd.DataFrame(data[key])
+                            break
+                    else:
+                        # Flatten the dict
+                        df = pd.json_normalize(data)
+                else:
+                    df = pd.DataFrame([data])
+            
+            logger.info(f"Loaded API data: {len(df)} rows, {len(df.columns)} columns")
+            return df
+            
+        except Exception as e:
+            logger.error(f"Error processing API source: {e}")
+            raise ValueError(f"Could not process API source: {e}")
+    
+    async def _process_hdfs(self, config: Dict[str, Any]) -> pd.DataFrame:
+        """Process HDFS sources (simplified for local deployment)"""
+        file_path = config.get('path', config.get('source', ''))
+        file_format = config.get('format', 'parquet')
+        
+        try:
+            # For local deployment, treat HDFS paths as local file paths
+            if file_format.lower() == 'parquet':
+                df = pd.read_parquet(file_path)
+            elif file_format.lower() == 'csv':
+                df = pd.read_csv(file_path)
+            else:
+                raise ValueError(f"Unsupported HDFS file format: {file_format}")
+            
+            logger.info(f"Loaded HDFS data: {len(df)} rows, {len(df.columns)} columns")
+            return df
+            
+        except Exception as e:
+            logger.error(f"Error processing HDFS source: {e}")
+            raise ValueError(f"Could not process HDFS source: {e}")
