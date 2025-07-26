@@ -1,0 +1,151 @@
+version: '3.8'
+
+services:
+  # Local Database for Analytics
+  postgres:
+    image: postgres:15-alpine
+    container_name: aibi-postgres
+    environment:
+      POSTGRES_DB: aibi
+      POSTGRES_USER: aibi_user
+      POSTGRES_PASSWORD: local_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/sql/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aibi_user -d aibi"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Local Cache and Session Management
+  redis:
+    image: redis:7-alpine
+    container_name: aibi-redis
+    command: redis-server --appendonly yes --maxmemory 1gb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Local File Storage (S3-compatible)
+  minio:
+    image: minio/minio:latest
+    container_name: aibi-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+      MINIO_BROWSER_REDIRECT_URL: http://localhost:9001
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Local LLM Service
+  ollama:
+    image: ollama/ollama:latest
+    container_name: aibi-ollama
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+      - OLLAMA_ORIGINS=http://localhost:*
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  # Backend API Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: aibi-backend
+    environment:
+      - DATABASE_URL=postgresql://aibi_user:local_password@postgres:5432/aibi
+      - REDIS_URL=redis://redis:6379/0
+      - MINIO_URL=http://minio:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin123
+      - OLLAMA_URL=http://ollama:11434
+      - UPLOAD_DIR=/app/uploads
+      - MAX_UPLOAD_SIZE=104857600
+      - CORS_ORIGINS=
+    volumes:
+      - ./data/uploads:/app/uploads
+      - ./data/processed:/app/processed
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Frontend Interface
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: aibi-frontend
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+      - REACT_APP_WS_URL=ws://localhost:8000/ws
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  minio_data:
+    driver: local
+  ollama_data:
+    driver: local
+
+networks:
+  default:
+    name: aibi-local
+    driver: bridge

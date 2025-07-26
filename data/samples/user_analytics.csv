@@ -1,0 +1,21 @@
+user_id,name,email,status,signup_date,last_login,plan_type,monthly_spending,region,age,gender
+U001,John Smith,john.smith@email.com,active,2023-01-15,2024-01-20,premium,299.99,North America,32,male
+U002,Sarah Johnson,sarah.j@email.com,active,2023-02-20,2024-01-19,basic,49.99,Europe,28,female
+U003,Mike Chen,mike.chen@email.com,inactive,2023-03-10,2023-12-01,premium,199.99,Asia,35,male
+U004,Emma Davis,emma.davis@email.com,active,2023-04-05,2024-01-18,basic,29.99,North America,24,female
+U005,Carlos Rodriguez,carlos.r@email.com,active,2023-05-12,2024-01-17,premium,399.99,South America,41,male
+U006,Lisa Wang,lisa.wang@email.com,inactive,2023-06-08,2023-11-15,basic,19.99,Asia,29,female
+U007,David Brown,david.brown@email.com,active,2023-07-22,2024-01-16,premium,249.99,Europe,38,male
+U008,Anna Martinez,anna.m@email.com,active,2023-08-14,2024-01-20,basic,39.99,North America,26,female
+U009,Tom Wilson,tom.wilson@email.com,active,2023-09-03,2024-01-15,premium,329.99,Europe,33,male
+U010,Jennifer Lee,jennifer.lee@email.com,inactive,2023-10-11,2023-10-25,basic,9.99,Asia,31,female
+U011,Robert Garcia,robert.g@email.com,active,2023-11-07,2024-01-14,premium,459.99,North America,45,male
+U012,Maria Gonzalez,maria.g@email.com,active,2023-12-01,2024-01-19,basic,59.99,South America,27,female
+U013,Alex Kim,alex.kim@email.com,active,2024-01-02,2024-01-18,premium,199.99,Asia,30,male
+U014,Sophie Turner,sophie.t@email.com,active,2024-01-08,2024-01-17,basic,79.99,Europe,25,female
+U015,James Anderson,james.a@email.com,inactive,2022-08-15,2023-08-20,premium,99.99,North America,39,male
+U016,Rachel Green,rachel.g@email.com,active,2024-01-10,2024-01-16,basic,49.99,North America,22,female
+U017,Luis Silva,luis.silva@email.com,active,2023-05-20,2024-01-15,premium,379.99,South America,36,male
+U018,Nina Patel,nina.patel@email.com,active,2023-07-18,2024-01-14,basic,69.99,Asia,34,female
+U019,Mark Thompson,mark.t@email.com,active,2023-09-25,2024-01-20,premium,289.99,Europe,40,male
+U020,Isabella Lopez,isabella.l@email.com,inactive,2023-04-12,2023-09-10,basic,19.99,South America,23,female
