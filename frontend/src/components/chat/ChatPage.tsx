@@ -6,7 +6,7 @@ import {
   Fade,
   keyframes,
 } from '@mui/material';
-import ChatInterface from './ChatInterface';
+import { MinimalChat } from './MinimalChat';
 
 // Egyptian Background Animation Component
 const EgyptianChatBackground: React.FC = () => {
@@ -340,7 +340,7 @@ const ChatPage: React.FC = () => {
               },
             }}
           >
-            <ChatInterface />
+            <MinimalChat />
           </Box>
         </Container>
       </Box>

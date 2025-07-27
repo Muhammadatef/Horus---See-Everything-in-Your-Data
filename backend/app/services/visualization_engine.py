@@ -139,7 +139,14 @@ class VisualizationEngine:
         numeric_cols = len(analysis["numeric_columns"])
         categorical_cols = len(analysis["categorical_columns"])
         
-        # Priority 1: Question intent keywords
+        # Priority 1: KPI and metric questions
+        if any(word in question_lower for word in ['how many', 'count', 'total', 'number of', 'kpi']):
+            if 'active' in question_lower:
+                return "kpi"
+            elif row_count <= 10:  # Small result set for counting
+                return "kpi"
+        
+        # Priority 2: Question intent keywords
         if any(word in question_lower for word in ['trend', 'over time', 'timeline', 'historical']):
             if analysis["has_time_series"]:
                 return "line_chart"
@@ -207,6 +214,8 @@ class VisualizationEngine:
         
         if chart_type == "metric_card":
             return self._generate_metric_card(df, theme)
+        elif chart_type == "kpi":
+            return self._generate_kpi_card(df, theme, question)
         elif chart_type == "bar_chart":
             return self._generate_bar_chart(df, analysis, theme, question)
         elif chart_type == "pie_chart":
@@ -222,6 +231,36 @@ class VisualizationEngine:
         else:
             return self._generate_bar_chart(df, analysis, theme, question)
     
+    def _generate_kpi_card(self, df: pd.DataFrame, theme: Dict[str, Any], question: str) -> Dict[str, Any]:
+        """Generate KPI card configuration"""
+        
+        question_lower = question.lower()
+        
+        if 'active' in question_lower:
+            # Count active users
+            active_count = sum(1 for _, row in df.iterrows() if row.get('status', '').lower() == 'active')
+            total_count = len(df)
+            
+            return {
+                "type": "kpi",
+                "value": active_count,
+                "label": "Active Users",
+                "total": total_count,
+                "percentage": round((active_count / total_count) * 100, 1) if total_count > 0 else 0,
+                "color": theme["colorScheme"][0],
+                "subtitle": f"out of {total_count:,} total"
+            }
+        else:
+            # General count
+            total_count = len(df)
+            return {
+                "type": "kpi", 
+                "value": total_count,
+                "label": "Total Records",
+                "color": theme["colorScheme"][0],
+                "subtitle": "in dataset"
+            }
+
     def _generate_metric_card(self, df: pd.DataFrame, theme: Dict[str, Any]) -> Dict[str, Any]:
         """Generate metric card configuration"""
         
@@ -259,13 +298,13 @@ class VisualizationEngine:
             
             # Group by categorical column and aggregate numeric
             grouped = df.groupby(cat_col)[num_col].sum().sort_values(ascending=False).head(20)
-            categories = grouped.index.tolist()
+            categories = [str(cat) for cat in grouped.index.tolist()]
             values = grouped.values.tolist()
             
         else:
             # Count occurrences
             value_counts = df[cat_col].value_counts().head(20)
-            categories = value_counts.index.tolist()
+            categories = [str(cat) for cat in value_counts.index.tolist()]
             values = value_counts.values.tolist()
             num_col = "Count"
         
@@ -283,7 +322,7 @@ class VisualizationEngine:
                 "type": "category",
                 "data": categories,
                 "axisLabel": {
-                    "rotate": 45 if len(max(categories, key=len)) > 10 else 0,
+                    "rotate": 45 if categories and len(max(categories, key=len)) > 10 else 0,
                     "color": theme["textColor"]
                 }
             },
@@ -535,64 +574,163 @@ class VisualizationEngine:
         }
     
     def _generate_chart_insights(self, df: pd.DataFrame, chart_type: str, analysis: Dict[str, Any]) -> List[str]:
-        """Generate insights about the visualization"""
+        """Generate educational insights about the visualization with statistical explanations"""
         
         insights = []
         
         if chart_type == "metric_card":
-            insights.append("Single value metric displayed prominently")
+            insights.append("📊 **Single Value Analysis**: This metric card highlights your key performance indicator")
+            insights.append("💡 **How to use**: Compare this number to previous periods or benchmarks to assess performance")
+        
+        elif chart_type == "kpi":
+            insights.append("🎯 **KPI Dashboard**: Key Performance Indicators give you quick insights into business health")
+            insights.append("📈 **Statistical context**: These metrics are often more meaningful when tracked over time")
         
         elif chart_type == "bar_chart":
             if analysis["categorical_columns"]:
                 cat_col = analysis["categorical_columns"][0]
-                top_category = df[cat_col].value_counts().index[0]
-                insights.append(f"'{top_category}' is the most frequent category")
+                value_counts = df[cat_col].value_counts()
+                top_category = value_counts.index[0]
+                top_percentage = (value_counts.iloc[0] / len(df)) * 100
+                
+                insights.append(f"📊 **Distribution Analysis**: '{top_category}' dominates with {value_counts.iloc[0]} occurrences ({top_percentage:.1f}%)")
+                
+                # Statistical insight about distribution
+                if top_percentage > 50:
+                    insights.append(f"📈 **Statistical insight**: This is a heavily skewed distribution - one category represents over half your data")
+                elif len(value_counts) > 10 and top_percentage < 20:
+                    insights.append(f"⚖️ **Statistical insight**: This shows an even distribution across many categories")
+                else:
+                    insights.append(f"📊 **Statistical insight**: Moderate concentration - no single category completely dominates")
         
         elif chart_type == "pie_chart":
-            insights.append("Shows proportional breakdown of categories")
-            total_categories = len(analysis.get("value_distributions", {}).get(analysis["categorical_columns"][0], {}))
-            if total_categories > 10:
-                insights.append(f"Showing top 10 out of {total_categories} categories")
+            if analysis["categorical_columns"]:
+                cat_col = analysis["categorical_columns"][0]
+                unique_count = df[cat_col].nunique()
+                insights.append(f"🥧 **Proportional Analysis**: Shows how {unique_count} categories split the total")
+                insights.append(f"💡 **Best for**: Understanding parts of a whole - each slice represents percentage of total")
+                
+                if unique_count > 10:
+                    insights.append(f"⚠️ **Note**: Showing top 10 categories for clarity (total: {unique_count})")
         
         elif chart_type == "line_chart":
-            insights.append("Time series data shows trends over time")
+            insights.append("📈 **Trend Analysis**: Line charts reveal patterns and changes over time")
+            insights.append("🔍 **Look for**: Upward/downward trends, seasonal patterns, or sudden changes")
+            
             if len(analysis["numeric_columns"]) > 1:
-                insights.append("Multiple metrics can be compared across time")
+                insights.append("📊 **Multi-metric view**: Compare how different metrics move together over time")
+                insights.append("💡 **Correlation clues**: Lines moving together suggest related metrics")
         
         elif chart_type == "scatter_plot":
-            insights.append("Shows relationship between two numeric variables")
+            if len(analysis["numeric_columns"]) >= 2:
+                insights.append("🔗 **Correlation Analysis**: Each dot represents one record with two measurements")
+                insights.append("📊 **Pattern recognition**: Look for upward trends (positive correlation) or downward trends (negative correlation)")
+                insights.append("💡 **Statistical meaning**: Scattered dots = weak relationship, clear line pattern = strong relationship")
             
         elif chart_type == "histogram":
-            insights.append("Shows distribution pattern of numeric values")
+            if analysis["numeric_columns"]:
+                num_col = analysis["numeric_columns"][0]
+                values = df[num_col].dropna()
+                
+                if len(values) > 0:
+                    mean_val = values.mean()
+                    median_val = values.median()
+                    
+                    insights.append(f"📊 **Distribution Shape**: Shows how {len(values)} values are spread across different ranges")
+                    insights.append(f"📈 **Central tendency**: Average = {mean_val:.2f}, Median = {median_val:.2f}")
+                    
+                    # Statistical insight about distribution shape
+                    if abs(mean_val - median_val) / median_val > 0.2:
+                        if mean_val > median_val:
+                            insights.append("📊 **Shape insight**: Right-skewed distribution (few high values pull the average up)")
+                        else:
+                            insights.append("📊 **Shape insight**: Left-skewed distribution (few low values pull the average down)")
+                    else:
+                        insights.append("⚖️ **Shape insight**: Fairly symmetric distribution (average ≈ median)")
         
-        # Add data quality insights
+        # Enhanced data quality insights with educational context
         missing_data = df.isnull().sum().sum()
+        total_cells = len(df) * len(df.columns)
+        
         if missing_data > 0:
-            insights.append(f"Note: {missing_data} missing values in the dataset")
+            missing_percentage = (missing_data / total_cells) * 100
+            insights.append(f"🔍 **Data quality**: {missing_data} missing values ({missing_percentage:.1f}% of all data)")
+            
+            if missing_percentage > 10:
+                insights.append("⚠️ **Consider**: High missing data can affect analysis reliability")
+            elif missing_percentage > 5:
+                insights.append("💡 **Note**: Moderate missing data - results are still reliable")
+            else:
+                insights.append("✅ **Excellent**: Very low missing data rate")
+        else:
+            insights.append("✅ **Perfect data quality**: No missing values detected")
+        
+        # Sample size insights for statistical significance
+        if len(df) < 30:
+            insights.append("📊 **Sample size note**: Small dataset - patterns may not be statistically significant")
+        elif len(df) < 100:
+            insights.append("📊 **Sample size note**: Moderate dataset - good for initial insights")
+        else:
+            insights.append("📊 **Sample size note**: Large dataset - statistically robust for analysis")
         
         return insights
     
     def _get_recommended_actions(self, chart_type: str, analysis: Dict[str, Any]) -> List[str]:
-        """Get recommended actions for the user"""
+        """Get educational, actionable recommendations for deeper analysis"""
         
         actions = []
         
         if chart_type == "data_table":
-            actions.append("Consider filtering the data for better visualization")
-            actions.append("Try asking about specific aspects of the data")
+            actions.append("🎯 **Focus your analysis**: Try filtering for specific segments that interest you")
+            actions.append("📊 **Find patterns**: Ask 'What patterns do you see in this data?' for insights")
+            actions.append("🔍 **Drill down**: Choose specific columns to analyze in detail")
         
-        elif len(analysis["numeric_columns"]) > 0 and len(analysis["categorical_columns"]) > 0:
-            actions.append("Try comparing numeric values across categories")
-            actions.append("Ask about averages, totals, or distributions")
+        elif chart_type == "kpi" or chart_type == "metric_card":
+            actions.append("📈 **Track over time**: Ask 'How has this metric changed over time?'")
+            actions.append("🎯 **Compare segments**: Break this metric down by different categories")
+            actions.append("🔍 **Context analysis**: Compare this to industry benchmarks or past performance")
+        
+        elif chart_type == "bar_chart":
+            actions.append("📊 **Statistical analysis**: Ask 'What's the average and median for each category?'")
+            actions.append("🎯 **Root cause**: Explore 'What factors drive the differences between categories?'")
+            actions.append("📈 **Trend analysis**: If you have time data, ask 'How have these categories changed over time?'")
+        
+        elif chart_type == "pie_chart":
+            actions.append("🔍 **Segment deep-dive**: Pick your largest segment and analyze it separately")
+            actions.append("📊 **Comparative analysis**: Ask 'How do these proportions compare to last year/month?'")
+            actions.append("🎯 **Focus strategy**: Identify if you should focus on growing small segments or optimizing large ones")
+        
+        elif chart_type == "line_chart":
+            actions.append("📈 **Forecast future**: Ask 'What trends suggest about future performance?'")
+            actions.append("🔍 **Identify inflection points**: Look for sudden changes and ask 'What caused this change?'")
+            actions.append("📊 **Correlation analysis**: If you have multiple lines, explore which metrics move together")
+        
+        elif chart_type == "scatter_plot":
+            actions.append("🔗 **Measure correlation**: Ask 'What's the correlation coefficient between these variables?'")
+            actions.append("🎯 **Outlier investigation**: Identify unusual data points and investigate why they're different")
+            actions.append("📊 **Predictive modeling**: Strong correlations can help predict one variable from another")
+        
+        elif chart_type == "histogram":
+            actions.append("📊 **Statistical summary**: Ask for percentiles, standard deviation, and skewness")
+            actions.append("🔍 **Outlier detection**: Identify values outside normal ranges for investigation")
+            actions.append("🎯 **Segmentation**: Use distribution insights to create meaningful customer/data segments")
+        
+        # Add general recommendations based on data characteristics
+        if len(analysis["numeric_columns"]) > 0 and len(analysis["categorical_columns"]) > 0:
+            actions.append("🔗 **Cross-analysis**: Explore how numeric values vary across different categories")
         
         if analysis["has_time_series"]:
-            actions.append("Explore trends over time")
-            actions.append("Ask about patterns or changes in the data")
+            actions.append("📅 **Temporal patterns**: Look for seasonal, weekly, or monthly patterns in your data")
         
         if len(analysis["numeric_columns"]) >= 2:
-            actions.append("Explore correlations between numeric variables")
+            actions.append("🔍 **Multi-variate analysis**: Explore relationships between multiple numeric variables")
         
-        return actions[:3]  # Limit to 3 recommendations
+        # Educational prompts for business context
+        if chart_type != "data_table":
+            actions.append("💡 **Business context**: Ask 'What business decisions can I make from this insight?'")
+            actions.append("📋 **Action planning**: Consider 'What should be my next steps based on this data?'")
+        
+        return actions[:4]  # Limit to 4 recommendations for readability
     
     def _determine_number_format(self, value: Any) -> str:
         """Determine appropriate number format"""

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Chat Test</title>
+</head>
+<body>
+    <h1>Chat Debug Test</h1>
+    <input type="file" id="fileInput" accept=".csv">
+    <input type="text" id="questionInput" placeholder="Ask a question..." value="How many rows are there?">
+    <button onclick="testChat()">Test Chat</button>
+    <div id="result"></div>
+    
+    <script>
+        async function testChat() {
+            const fileInput = document.getElementById('fileInput');
+            const questionInput = document.getElementById('questionInput');
+            const resultDiv = document.getElementById('result');
+            
+            if (!fileInput.files[0]) {
+                resultDiv.innerHTML = 'Please select a file first';
+                return;
+            }
+            
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                const formData = new FormData();
+                formData.append('file', fileInput.files[0]);
+                formData.append('question', questionInput.value);
+                formData.append('user_id', 'debug_test');
+
+                const response = await fetch('http://localhost:8000/api/v1/conversational/analyze', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                resultDiv.innerHTML = `
+                    <h3>Success!</h3>
+                    <p><strong>Question:</strong> ${data.question}</p>
+                    <p><strong>Answer:</strong> ${data.answer}</p>
+                    <p><strong>Visualization:</strong> ${data.visualization ? data.visualization.type : 'None'}</p>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<h3>Error:</h3><p>${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

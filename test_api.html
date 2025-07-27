@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Backend API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #1a1a2e; color: white; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .test-box { background: rgba(255,255,255,0.1); padding: 20px; margin: 10px 0; border-radius: 8px; }
+        .success { border-left: 4px solid #4CAF50; }
+        .error { border-left: 4px solid #f44336; }
+        .warning { border-left: 4px solid #ff9800; }
+        button { padding: 10px 20px; margin: 5px; background: #DAA520; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #B8860B; }
+        pre { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 4px; overflow-x: auto; }
+        .status { font-weight: bold; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Horus AI Backend API Test</h1>
+        <p>Use this page to test if your backend is running and working correctly.</p>
+        
+        <div class="test-box">
+            <h3>Test 1: Health Check</h3>
+            <button onclick="testHealth()">Test /health endpoint</button>
+            <div id="healthResult"></div>
+        </div>
+        
+        <div class="test-box">
+            <h3>Test 2: API Root</h3>
+            <button onclick="testRoot()">Test /api/v1 endpoint</button>
+            <div id="rootResult"></div>
+        </div>
+        
+        <div class="test-box">
+            <h3>Test 3: Conversational Endpoint</h3>
+            <p>This will test the actual chat endpoint with a simple CSV file.</p>
+            <input type="file" id="testFile" accept=".csv">
+            <button onclick="testConversational()">Test Chat API</button>
+            <div id="chatResult"></div>
+        </div>
+        
+        <div class="test-box warning">
+            <h3>🔧 Troubleshooting</h3>
+            <p><strong>If you see "Failed to fetch" errors:</strong></p>
+            <ul>
+                <li>Make sure backend is running: <code>./start_backend.sh</code></li>
+                <li>Check backend URL: <a href="http://localhost:8000/health" target="_blank">http://localhost:8000/health</a></li>
+                <li>Check API docs: <a href="http://localhost:8000/docs" target="_blank">http://localhost:8000/docs</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        async function testHealth() {
+            const resultDiv = document.getElementById('healthResult');
+            resultDiv.innerHTML = '<div class="status">Testing...</div>';
+            
+            try {
+                const response = await fetch('http://localhost:8000/health');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="status" style="color: #4CAF50;">✅ SUCCESS</div>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                    resultDiv.className = 'test-box success';
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status" style="color: #f44336;">❌ FAILED</div>
+                    <p>Error: ${error.message}</p>
+                    <p>Make sure the backend server is running on port 8000</p>
+                `;
+                resultDiv.className = 'test-box error';
+            }
+        }
+        
+        async function testRoot() {
+            const resultDiv = document.getElementById('rootResult');
+            resultDiv.innerHTML = '<div class="status">Testing...</div>';
+            
+            try {
+                const response = await fetch('http://localhost:8000/');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="status" style="color: #4CAF50;">✅ SUCCESS</div>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                    resultDiv.className = 'test-box success';
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status" style="color: #f44336;">❌ FAILED</div>
+                    <p>Error: ${error.message}</p>
+                `;
+                resultDiv.className = 'test-box error';
+            }
+        }
+        
+        async function testConversational() {
+            const resultDiv = document.getElementById('chatResult');
+            const fileInput = document.getElementById('testFile');
+            
+            resultDiv.innerHTML = '<div class="status">Testing...</div>';
+            
+            // Create test CSV data if no file selected
+            let formData = new FormData();
+            
+            if (fileInput.files[0]) {
+                formData.append('file', fileInput.files[0]);
+            } else {
+                // Create a test CSV blob
+                const csvContent = `product_name,price,category
+iPhone,999.99,Electronics
+Samsung TV,799.99,Electronics
+Nike Shoes,129.99,Fashion`;
+                const blob = new Blob([csvContent], { type: 'text/csv' });
+                formData.append('file', blob, 'test.csv');
+            }
+            
+            formData.append('question', 'What is the average price?');
+            formData.append('user_id', 'test');
+            
+            try {
+                const response = await fetch('http://localhost:8000/api/v1/conversational/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="status" style="color: #4CAF50;">✅ SUCCESS - Chat API Working!</div>
+                        <p><strong>Question:</strong> ${data.question}</p>
+                        <p><strong>Answer:</strong> ${data.answer}</p>
+                        <p><strong>Conversation ID:</strong> ${data.conversation_id}</p>
+                        <details>
+                            <summary>Full Response</summary>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    `;
+                    resultDiv.className = 'test-box success';
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${data.error || response.statusText}`);
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status" style="color: #f44336;">❌ FAILED</div>
+                    <p>Error: ${error.message}</p>
+                    <p>This is the same error you're seeing in the React app.</p>
+                `;
+                resultDiv.className = 'test-box error';
+            }
+        }
+    </script>
+</body>
+</html>

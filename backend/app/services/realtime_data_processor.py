@@ -37,7 +37,6 @@ class RealtimeDataProcessor:
         data_source = DataSource(
             name=filename.replace('.', '_').replace('-', '_'),
             original_filename=filename,
-            file_path=file_path,
             file_type=file_type,
             file_size=file_size,
             processing_status="analyzing"

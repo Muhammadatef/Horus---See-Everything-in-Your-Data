@@ -24,6 +24,79 @@ class EnhancedQueryProcessor:
     def __init__(self):
         self.llm_service = EnhancedLLMService()
     
+    async def _analyze_user_intent(self, question: str, schema: Dict[str, Any]) -> Dict[str, Any]:
+        """Analyze user intent to determine response type"""
+        
+        question_lower = question.lower().strip()
+        
+        # Check for data analysis keywords
+        data_keywords = [
+            'how many', 'count', 'total', 'sum', 'average', 'mean', 'median',
+            'show me', 'display', 'visualize', 'chart', 'graph', 'plot',
+            'compare', 'analyze', 'breakdown', 'distribution', 'pattern',
+            'trend', 'correlation', 'statistics', 'min', 'max', 'top', 'bottom'
+        ]
+        
+        visualization_keywords = [
+            'show', 'display', 'visualize', 'chart', 'graph', 'plot', 
+            'breakdown', 'distribution', 'compare'
+        ]
+        
+        # Determine if this requires SQL execution
+        requires_sql = any(keyword in question_lower for keyword in data_keywords)
+        
+        # Determine visualization type
+        visualization_type = None
+        if any(keyword in question_lower for keyword in visualization_keywords):
+            if any(word in question_lower for word in ['compare', 'vs', 'breakdown', 'distribution']):
+                visualization_type = 'bar_chart'
+            elif any(word in question_lower for word in ['trend', 'over time', 'timeline']):
+                visualization_type = 'line_chart' 
+            elif any(word in question_lower for word in ['total', 'sum', 'count', 'how many']):
+                visualization_type = 'kpi'
+            else:
+                visualization_type = 'table'
+        
+        # Determine primary intent
+        primary_intent = 'exploration'
+        if any(word in question_lower for word in ['how many', 'count', 'total']):
+            primary_intent = 'metrics'
+        elif any(word in question_lower for word in ['compare', 'vs', 'versus']):
+            primary_intent = 'comparisons'
+        elif any(word in question_lower for word in ['top', 'best', 'worst', 'highest', 'lowest']):
+            primary_intent = 'rankings'
+        elif any(word in question_lower for word in ['trend', 'over time', 'growth']):
+            primary_intent = 'trends'
+        
+        return {
+            'requires_sql': requires_sql,
+            'visualization_type': visualization_type,
+            'is_conversational': not requires_sql,
+            'intent_keywords': [kw for kw in data_keywords if kw in question_lower],
+            'complexity': 'simple' if len([kw for kw in data_keywords if kw in question_lower]) <= 2 else 'complex',
+            'primary_intent': primary_intent,
+            'confidence': 0.8,
+            'entities': {'columns': [], 'aggregations': [], 'filters': []},
+            'result_type': 'data_table',
+            'time_dimension': None
+        }
+    
+    async def _generate_sql_query(self, question: str, schema: Dict[str, Any], columns: List[str]) -> str:
+        """Generate SQL query for the question"""
+        
+        # Use existing LLM service to generate SQL
+        table_name = "temp_data_table"  # This would be dynamic in production
+        
+        # Create a simple intent analysis for SQL generation
+        intent_analysis = await self._analyze_user_intent(question, schema)
+        
+        return await self.llm_service._generate_business_sql(
+            question=question,
+            schema=schema,
+            table_name=table_name,
+            intent_analysis=intent_analysis
+        )
+    
     async def process_query_with_updates(
         self,
         question: str,
@@ -36,6 +109,32 @@ class EnhancedQueryProcessor:
         query_id = str(uuid.uuid4())
         
         try:
+            # Check if this is a conversational message rather than a data query
+            if self._is_conversational_message(question):
+                conversational_response = self._handle_conversational_message(question)
+                
+                await websocket_manager.send_query_update(
+                    user_id=user_id,
+                    query_id=query_id,
+                    status="completed",
+                    progress=100,
+                    message="✅ Conversational response generated!",
+                    results={"question": question, "answer": conversational_response}
+                )
+                
+                return {
+                    "success": True,
+                    "question": question,
+                    "answer": conversational_response,
+                    "sql": None,
+                    "results": None,
+                    "visualization": None,
+                    "metadata": {
+                        "query_type": "conversational",
+                        "execution_summary": "Conversational response - no data analysis needed"
+                    }
+                }
+            
             # Send initial query processing update
             await websocket_manager.send_query_update(
                 user_id=user_id,
@@ -56,7 +155,23 @@ class EnhancedQueryProcessor:
             if not data_source:
                 raise ValueError("Data source not found")
             
-            schema = data_source.schema_info or {}
+            schema_raw = data_source.schema_info or {}
+            
+            # Handle different schema formats
+            if isinstance(schema_raw, dict) and "columns" in schema_raw:
+                # If schema is in format {"columns": [...]} convert to proper format
+                schema = {}
+                for col in schema_raw["columns"]:
+                    if isinstance(col, str):
+                        # Simple column name, create basic schema entry
+                        schema[col] = {"type": "text", "description": f"{col} column"}
+                    elif isinstance(col, dict):
+                        # Column with metadata
+                        col_name = col.get("name", col.get("column", "unknown"))
+                        schema[col_name] = col
+            else:
+                # Assume it's already in the correct format
+                schema = schema_raw
             table_name = dataset.table_name
             
             await websocket_manager.send_query_update(
@@ -100,7 +215,7 @@ class EnhancedQueryProcessor:
                 }
             )
             
-            # Step 3: Generate natural language answer
+            # Step 3: Generate natural language answer - Universal approach
             answer = await self.llm_service.generate_business_answer(
                 question=question,
                 results=query_results,
@@ -341,6 +456,241 @@ class EnhancedQueryProcessor:
             ])
         
         return suggestions
+    
+    def _is_conversational_message(self, question: str) -> bool:
+        """Intelligently detect if the message is conversational vs data analysis request"""
+        
+        question_lower = question.lower().strip()
+        
+        # 1. Clear conversational patterns (always conversational)
+        conversational_patterns = [
+            # Greetings
+            'hi', 'hello', 'hey', 'good morning', 'good afternoon', 'good evening', 'greetings',
+            # Pleasantries
+            'thank you', 'thanks', 'goodbye', 'bye', 'see you', 'nice to meet',
+            # About/Help requests
+            'help', 'what can you do', 'how do you work', 'what are your capabilities',
+            'who are you', 'what are you', 'tell me about yourself', 'introduce yourself',
+            # Casual conversation
+            'how are you', 'nice to meet you', 'good job', 'well done', 'amazing', 'awesome'
+        ]
+        
+        for pattern in conversational_patterns:
+            if pattern in question_lower:
+                return True
+        
+        # 2. Data analysis indicators (never conversational)
+        data_indicators = [
+            # Query words
+            'show', 'display', 'list', 'find', 'get', 'retrieve', 'fetch',
+            # Analysis terms
+            'analyze', 'analysis', 'calculate', 'count', 'sum', 'average', 'total',
+            # Data terms
+            'data', 'records', 'rows', 'table', 'database', 'dataset', 'information',
+            # Question starters for data
+            'how many', 'what is', 'what are', 'which', 'when', 'where',
+            # Business terms
+            'users', 'customers', 'sales', 'revenue', 'profit', 'orders', 'products',
+            'active', 'inactive', 'status', 'region', 'country', 'spending',
+            # Comparative terms
+            'compare', 'comparison', 'versus', 'vs', 'between', 'difference',
+            # Trend terms
+            'trend', 'over time', 'historical', 'growth', 'decline', 'change',
+            # Visualization requests
+            'chart', 'graph', 'visualization', 'plot', 'dashboard', 'report'
+        ]
+        
+        # IMPORTANT: Check for data indicators FIRST and make it definitive
+        # These should NEVER be treated as conversational
+        for indicator in data_indicators:
+            if indicator in question_lower:
+                return False
+        
+        # 3. Question structure analysis - definitive data query patterns
+        query_starters = [
+            'how many', 'how much', 'what is the', 'what are the', 'show me',
+            'give me', 'i want', 'i need', 'can you show', 'can you tell me about',
+            'what about', 'tell me about the', 'analyze', 'calculate'
+        ]
+        
+        for starter in query_starters:
+            if question_lower.startswith(starter):
+                # But still check if it's about general info rather than data
+                general_info_terms = ['yourself', 'your capabilities', 'how you work', 'what you do']
+                if any(term in question_lower for term in general_info_terms):
+                    return True
+                return False
+        
+        # 4. Strong business/data context indicators (should override length)
+        has_business_context = any(term in question_lower for term in [
+            'business', 'company', 'organization', 'metrics', 'kpi', 'dashboard',
+            'insight', 'analytics', 'intelligence'
+        ])
+        
+        if has_business_context:
+            return False
+        
+        # 5. Length and complexity heuristics (but only for truly ambiguous cases)
+        # Very short messages are usually conversational
+        if len(question_lower) <= 3:
+            return True
+        
+        # Single words that could be either
+        single_word_conversational = ['ok', 'okay', 'yes', 'no', 'sure', 'great', 'cool', 'nice']
+        if question_lower in single_word_conversational:
+            return True
+        
+        # 6. REMOVED the problematic short message rule that was overriding data queries
+        # OLD: if len(question_lower.split()) <= 4: return True
+        # This was incorrectly treating "how many customers" as conversational
+        
+        # Default to data analysis if we can't determine (better to err on analysis side)
+        return False
+    
+    def _handle_conversational_message(self, question: str) -> str:
+        """Generate appropriate conversational responses like ChatGPT/Claude for Data Analysis"""
+        
+        question_lower = question.lower().strip()
+        
+        # Greetings
+        if any(word in question_lower for word in ['hi', 'hello', 'hey']):
+            return """👋 **Hello! I'm your Data Analysis Assistant**
+
+Think of me as your personal data scientist who speaks plain English! I'm designed to help you understand your data through conversation, just like ChatGPT but specialized for data analysis.
+
+🔍 **What makes me different:**
+• **I explain, don't just calculate** - I'll tell you what your numbers mean for your business
+• **I'm educational** - I'll help you understand statistical concepts as we go
+• **I'm adaptive** - I adjust my analysis style based on what you need
+• **I'm practical** - I focus on insights that help you make better decisions
+
+📊 **My analysis capabilities:**
+• **Statistical Analysis:** Averages, medians, distributions, correlations
+• **Smart Visualizations:** Auto-generate the right charts for your questions  
+• **Business Intelligence:** Turn data into actionable insights
+• **Educational Explanations:** Learn data concepts as we explore together
+
+💬 **How to work with me:**
+Just talk to me naturally! Ask questions like:
+• "What patterns do you see in my sales data?"
+• "Help me understand my customer segments"
+• "What should I focus on to grow my business?"
+
+**Ready to turn your data into insights?** Upload your data or ask me anything! 📈"""
+
+        # Good morning/afternoon/evening
+        if any(time in question_lower for time in ['good morning', 'good afternoon', 'good evening']):
+            return """🌅 **Good day! Ready to unlock insights from your data?**
+
+I'm Horus, your dedicated AI Business Intelligence assistant. I'm here to transform your raw data into actionable business intelligence.
+
+**What would you like to explore today?**
+• Upload a dataset and ask questions
+• Analyze trends, patterns, and metrics
+• Generate visualizations and KPIs
+• Get business recommendations
+
+Let's turn your data into wisdom! 📊✨"""
+
+        # Thank you
+        if any(word in question_lower for word in ['thank', 'thanks']):
+            return """🙏 **You're very welcome!**
+
+I'm always happy to help you discover insights in your data. Data analysis is my passion!
+
+**Need anything else?**
+• More analysis on your current dataset?
+• Want to explore different questions?
+• Ready to upload new data?
+
+I'm here whenever you need business intelligence! 𓂀"""
+
+        # Help requests
+        if any(word in question_lower for word in ['help', 'capabilities', 'what can you do']):
+            return """🚀 **Data Analysis Assistant - Your AI Data Scientist**
+
+I'm designed to be like ChatGPT, but specialized for data analysis and statistics. I combine the conversational abilities you love with deep data expertise.
+
+**🧠 How I Analyze Data:**
+• **Statistical Analysis:** I calculate means, medians, distributions, and correlations while explaining what they mean
+• **Pattern Recognition:** I identify trends, outliers, and relationships in your data
+• **Visual Intelligence:** I automatically choose the right charts and explain what they show
+• **Business Context:** I translate numbers into business insights and recommendations
+
+**📊 Data I Can Work With:**
+• **File Formats:** CSV, Excel, JSON, Parquet
+• **Data Types:** Sales data, customer data, financial data, survey responses, website analytics
+• **Any Size:** From small datasets to large business databases
+
+**💬 My Communication Style:**
+• **Conversational:** Talk to me like you would a human analyst
+• **Educational:** I explain concepts so you learn as we go
+• **Adaptive:** I adjust my detail level based on your expertise
+• **Practical:** I focus on actionable insights, not just numbers
+
+**🎯 Example Conversations:**
+• "Help me understand what's driving customer churn"
+• "What story does my sales data tell?"
+• "I need to present to my boss - what insights should I highlight?"
+• "Explain this correlation to me like I'm not a statistician"
+
+**Ready to explore your data together?** 📈✨"""
+
+        # About questions
+        if any(word in question_lower for word in ['who are you', 'what are you', 'about yourself']):
+            return """🤖 **I'm your AI Data Analysis Assistant**
+
+Think of me as ChatGPT's data-savvy cousin! I have the same conversational abilities you love, but I'm specifically trained to help you understand and analyze data.
+
+**🎯 My Purpose:**
+I bridge the gap between complex data analysis and human understanding. I take your data questions and turn them into insights you can actually use.
+
+**🧠 What Makes Me Special:**
+• **Conversational by Design:** No need to learn SQL or statistical jargon - just ask me questions naturally
+• **Educational Approach:** I don't just give you numbers, I explain what they mean and why they matter
+• **Adaptive Intelligence:** I adjust my explanations based on your level of data expertise
+• **Business Focused:** I always try to connect statistical findings to real business implications
+
+**🔍 My Analysis Philosophy:**
+• Every dataset tells a story - I help you discover it
+• Statistics should serve business decisions, not confuse them
+• The best insights come from asking the right questions
+• Data is only valuable when it leads to action
+
+**💡 How I Work:**
+Just like chatting with a knowledgeable colleague who happens to be really good with data. Ask me anything, and I'll help you find answers while teaching you about data analysis along the way.
+
+**Ready to explore your data together?** 📊"""
+
+        # Goodbye
+        if any(word in question_lower for word in ['bye', 'goodbye', 'see you']):
+            return """👋 **Farewell for now!**
+
+Thank you for letting me help you explore your data today. Remember, I'm always here whenever you need business intelligence insights.
+
+**Until next time:**
+• Your data will be safely stored
+• I'll be ready for more analysis
+• Come back anytime with new questions
+
+May your data bring you wisdom and success! 𓂀✨
+
+*Horus - Your AI Business Intelligence Guardian*"""
+
+        # Default conversational response
+        return """💭 **I'm happy to chat!**
+
+I can have conversations just like ChatGPT, but I really shine when we're exploring data together. I'm designed to make data analysis feel like a natural conversation.
+
+**How about we dive into some data analysis?**
+• **Upload your data** and I'll tell you what story it's telling
+• **Ask me questions** about any dataset you have
+• **Get explanations** of statistical concepts as we go
+• **Discover insights** you might have missed
+
+Think of me as your analytical thinking partner - I'm here to help you understand your data and make better decisions!
+
+**What data questions are on your mind?** 🤔📊"""
 
 
 # Global instance

@@ -17,6 +17,7 @@ import QueryDataPage from './components/query/QueryDataPage';
 import RealTimeQueryPage from './components/query/RealTimeQueryPage';
 import DashboardPage from './components/dashboard/DashboardPage';
 import ChatPage from './components/chat/ChatPage';
+import { ConversationalInterface } from './components/chat/ConversationalInterface';
 
 // Create theme
 const theme = createTheme({
@@ -106,6 +107,7 @@ function App() {
           <Layout>
             <Routes>
               <Route path="/" element={<HomePage />} />
+              <Route path="/home" element={<HomePage />} />
               <Route path="/chat" element={<ChatPage />} />
               <Route path="/upload" element={<RealTimeUploadPage />} />
               <Route path="/upload-legacy" element={<UploadDataPage />} />

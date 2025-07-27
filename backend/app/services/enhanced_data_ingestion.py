@@ -629,10 +629,10 @@ class EnhancedDataIngestionService:
             col_info = {
                 "type": self._infer_business_type(df[col]),
                 "description": self._generate_smart_description(col, df[col]),
-                "nullable": df[col].isna().any(),
-                "unique_values": min(df[col].nunique(), 20),
-                "missing_percentage": (df[col].isna().sum() / len(df)) * 100,
-                "data_quality_score": self._calculate_column_quality(df[col])
+                "nullable": bool(df[col].isna().any()),
+                "unique_values": int(min(df[col].nunique(), 20)),
+                "missing_percentage": float((df[col].isna().sum() / len(df)) * 100),
+                "data_quality_score": float(self._calculate_column_quality(df[col]))
             }
             
             # Add type-specific metadata
@@ -811,7 +811,7 @@ class EnhancedDataIngestionService:
         upper_bound = Q3 + 1.5 * IQR
         
         outliers = series[(series < lower_bound) | (series > upper_bound)]
-        return len(outliers) > 0
+        return bool(len(outliers) > 0)
     
     async def _generate_intelligent_questions(self, schema: Dict[str, Any], dataset_name: str, df: pd.DataFrame) -> List[str]:
         """Generate intelligent sample questions based on data analysis"""

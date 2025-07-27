@@ -26,8 +26,8 @@ class Settings(BaseSettings):
     
     # Ollama (Local LLM)
     OLLAMA_URL: str = "http://ollama:11434"
-    OLLAMA_MODEL_CHAT: str = "llama2:7b-chat"
-    OLLAMA_MODEL_CODE: str = "codellama:7b"
+    OLLAMA_MODEL_CHAT: str = "gemma2:2b"
+    OLLAMA_MODEL_CODE: str = "gemma2:2b"
     
     # File upload settings
     UPLOAD_DIR: str = "/app/uploads"

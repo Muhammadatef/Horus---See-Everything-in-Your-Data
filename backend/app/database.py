@@ -4,7 +4,7 @@ Database configuration and models for Local AI-BI Platform
 
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import String, Integer, DateTime, Boolean, Text, JSON
+from sqlalchemy import String, Integer, DateTime, Boolean, Text, JSON, ARRAY
 from sqlalchemy.dialects.postgresql import UUID
 from datetime import datetime
 from typing import Optional, Dict, Any, List
@@ -64,7 +64,7 @@ class Dataset(Base):
     display_name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     schema_definition: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=False)
-    sample_questions: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
+    sample_questions: Mapped[Optional[List[str]]] = mapped_column(ARRAY(Text), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

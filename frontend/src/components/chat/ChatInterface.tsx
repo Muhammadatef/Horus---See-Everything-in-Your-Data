@@ -20,6 +20,7 @@ import {
   Menu,
   MenuItem,
   Divider,
+  keyframes,
 } from '@mui/material';
 import {
   Send as SendIcon,
@@ -49,6 +50,36 @@ interface Message {
 interface ChatInterfaceProps {
   onFileUpload?: (file: File) => void;
 }
+
+// Enhanced Egyptian animations for chat interface
+const floatingGlow = keyframes`
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(-10px) scale(1.1);
+    opacity: 1;
+  }
+`;
+
+const shimmerText = keyframes`
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+`;
+
+const pulseGold = keyframes`
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(184, 134, 11, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(184, 134, 11, 0.8), 0 0 30px rgba(218, 165, 32, 0.4);
+  }
+`;
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ onFileUpload }) => {
   const [messages, setMessages] = useState<Message[]>([
@@ -305,26 +336,202 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onFileUpload }) => {
   const renderVisualization = (visualization: any) => {
     if (!visualization) return null;
 
-    return (
-      <Box
-        sx={{
-          mt: 2,
-          p: 3,
-          background: 'rgba(255, 255, 255, 0.05)',
-          borderRadius: 3,
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-        }}
-      >
-        <Box display="flex" alignItems="center" gap={1} mb={2}>
-          <ChartIcon sx={{ color: '#DAA520' }} />
-          <Typography variant="h6" sx={{ color: 'rgba(255, 255, 255, 0.9)' }}>
-            Data Visualization
-          </Typography>
-        </Box>
-        {/* Placeholder for chart rendering */}
+    const { type, config, insights, data_summary } = visualization;
+
+    const renderChart = () => {
+      if (type === 'kpi' || type === 'metric_card') {
+        // Render KPI cards
+        const kpiValue = config?.value || data_summary?.rows || 0;
+        const kpiLabel = config?.label || 'Total Records';
+        const kpiSubtitle = config?.subtitle || '';
+        const kpiPercentage = config?.percentage;
+        const kpiTotal = config?.total;
+        
+        return (
+          <Box display="flex" gap={3} flexWrap="wrap">
+            <Paper
+              sx={{
+                p: 4,
+                minWidth: 280,
+                background: 'linear-gradient(135deg, rgba(184, 134, 11, 0.2), rgba(218, 165, 32, 0.1))',
+                border: '2px solid rgba(184, 134, 11, 0.4)',
+                borderRadius: 4,
+                textAlign: 'center',
+                animation: `${pulseGold} 3s ease-in-out infinite`,
+                position: 'relative',
+                overflow: 'hidden',
+                '&::before': {
+                  content: '\"\"',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: '4px',
+                  background: 'linear-gradient(90deg, #DAA520, #B8860B, #FFD700)',
+                },
+              }}
+            >
+              <Typography
+                variant="h1"
+                sx={{
+                  color: '#DAA520',
+                  fontWeight: 900,
+                  fontSize: '3.5rem',
+                  textShadow: '0 0 20px rgba(184, 134, 11, 0.8)',
+                  mb: 1,
+                  lineHeight: 1,
+                }}
+              >
+                {typeof kpiValue === 'number' ? kpiValue.toLocaleString() : kpiValue}
+              </Typography>
+              <Typography
+                variant="h5"
+                sx={{
+                  color: 'rgba(255, 255, 255, 0.95)',
+                  textTransform: 'uppercase',
+                  letterSpacing: 2,
+                  fontWeight: 600,
+                  mb: kpiSubtitle ? 1 : 0,
+                }}
+              >
+                {kpiLabel}
+              </Typography>
+              {kpiSubtitle && (
+                <Typography
+                  variant="body1"
+                  sx={{
+                    color: 'rgba(255, 255, 255, 0.7)',
+                    fontSize: '1rem',
+                    fontStyle: 'italic',
+                  }}
+                >
+                  {kpiSubtitle}
+                </Typography>
+              )}
+              {kpiPercentage !== undefined && (
+                <Box
+                  sx={{
+                    mt: 2,
+                    p: 2,
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    borderRadius: 2,
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                  }}
+                >
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      color: '#DAA520',
+                      fontWeight: 'bold',
+                    }}
+                  >
+                    {kpiPercentage}% Activation Rate
+                  </Typography>
+                </Box>
+              )}
+            </Paper>
+            
+            {/* Additional metrics if available */}
+            {kpiTotal && kpiTotal !== kpiValue && (
+              <Paper
+                sx={{
+                  p: 3,
+                  minWidth: 200,
+                  background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(184, 134, 11, 0.05))',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  borderRadius: 3,
+                  textAlign: 'center',
+                }}
+              >
+                <Typography
+                  variant="h2"
+                  sx={{
+                    color: 'rgba(255, 255, 255, 0.9)',
+                    fontWeight: 'bold',
+                    mb: 1,
+                  }}
+                >
+                  {kpiTotal.toLocaleString()}
+                </Typography>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    color: 'rgba(255, 255, 255, 0.7)',
+                    textTransform: 'uppercase',
+                    letterSpacing: 1,
+                  }}
+                >
+                  Total Users
+                </Typography>
+              </Paper>
+            )}
+          </Box>
+        );
+      }
+
+      if (type === 'bar_chart') {
+        // Simple bar chart visualization
+        const chartConfig = config || {};
+        const series = chartConfig.series?.[0] || {};
+        const xAxisData = chartConfig.xAxis?.data || [];
+        const seriesData = series.data || [];
+
+        return (
+          <Box>
+            <Typography variant="h6" sx={{ color: 'rgba(255, 255, 255, 0.9)', mb: 2 }}>
+              {chartConfig.title?.text || 'Data Distribution'}
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'end', height: 200 }}>
+              {xAxisData.map((label: string, index: number) => {
+                const value = seriesData[index] || 0;
+                const maxValue = Math.max(...seriesData);
+                const height = maxValue > 0 ? (value / maxValue) * 150 : 10;
+                
+                return (
+                  <Box key={index} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 60 }}>
+                    <Typography variant="caption" sx={{ color: '#DAA520', mb: 1, fontWeight: 'bold' }}>
+                      {value}
+                    </Typography>
+                    <Box
+                      sx={{
+                        width: 40,
+                        height: `${height}px`,
+                        background: 'linear-gradient(135deg, #DAA520, #B8860B)',
+                        borderRadius: '4px 4px 0 0',
+                        transition: 'all 0.3s ease',
+                        '&:hover': {
+                          transform: 'scaleY(1.1)',
+                          boxShadow: '0 0 15px rgba(184, 134, 11, 0.6)',
+                        },
+                      }}
+                    />
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: 'rgba(255, 255, 255, 0.7)',
+                        mt: 1,
+                        fontSize: '0.7rem',
+                        textAlign: 'center',
+                        maxWidth: 60,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {label}
+                    </Typography>
+                  </Box>
+                );
+              })}
+            </Box>
+          </Box>
+        );
+      }
+
+      // Default fallback
+      return (
         <Box
           sx={{
-            height: 300,
+            height: 200,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -334,9 +541,76 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onFileUpload }) => {
           }}
         >
           <Typography sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
-            Chart visualization would render here
+            {type ? `${type} visualization` : 'Data visualization'}
           </Typography>
         </Box>
+      );
+    };
+
+    return (
+      <Box
+        sx={{
+          mt: 2,
+          p: 3,
+          background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(184, 134, 11, 0.03) 100%)',
+          borderRadius: 4,
+          border: '1px solid rgba(184, 134, 11, 0.2)',
+          backdropFilter: 'blur(20px)',
+          boxShadow: '0 8px 32px rgba(184, 134, 11, 0.1)',
+        }}
+      >
+        <Box display="flex" alignItems="center" gap={1} mb={3}>
+          <ChartIcon sx={{ color: '#DAA520', fontSize: '1.5rem' }} />
+          <Typography
+            variant="h6"
+            sx={{
+              color: 'rgba(255, 255, 255, 0.95)',
+              fontWeight: 600,
+              textShadow: '0 1px 3px rgba(0, 0, 0, 0.3)',
+            }}
+          >
+            📊 Data Visualization
+          </Typography>
+        </Box>
+
+        {renderChart()}
+
+        {/* Insights section */}
+        {insights && insights.length > 0 && (
+          <Box sx={{ mt: 3, pt: 2, borderTop: '1px solid rgba(184, 134, 11, 0.2)' }}>
+            <Typography
+              variant="subtitle1"
+              sx={{
+                color: '#DAA520',
+                fontWeight: 600,
+                mb: 1,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+              }}
+            >
+              💡 Insights
+            </Typography>
+            {insights.map((insight: string, index: number) => (
+              <Typography
+                key={index}
+                variant="body2"
+                sx={{
+                  color: 'rgba(255, 255, 255, 0.8)',
+                  mb: 0.5,
+                  fontSize: '0.9rem',
+                  '&:before': {
+                    content: '"• "',
+                    color: '#DAA520',
+                    fontWeight: 'bold',
+                  },
+                }}
+              >
+                {insight}
+              </Typography>
+            ))}
+          </Box>
+        )}
       </Box>
     );
   };
@@ -373,15 +647,27 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onFileUpload }) => {
             >
               <Avatar
                 sx={{
-                  width: 32,
-                  height: 32,
+                  width: 40,
+                  height: 40,
                   background: message.type === 'user' 
-                    ? 'linear-gradient(135deg, #666, #888)' 
-                    : 'linear-gradient(135deg, #DAA520, #B8860B)',
-                  fontSize: message.type === 'assistant' ? '16px' : '14px',
+                    ? 'linear-gradient(135deg, #4A5568, #718096, #A0AEC0)' 
+                    : 'linear-gradient(135deg, #DAA520, #B8860B, #FFD700)',
+                  fontSize: message.type === 'assistant' ? '18px' : '16px',
+                  border: message.type === 'assistant' ? '2px solid rgba(184, 134, 11, 0.3)' : '2px solid rgba(255, 255, 255, 0.1)',
+                  boxShadow: message.type === 'assistant' 
+                    ? '0 0 15px rgba(184, 134, 11, 0.4)' 
+                    : '0 4px 12px rgba(0, 0, 0, 0.15)',
+                  animation: message.type === 'assistant' ? `${floatingGlow} 3s ease-in-out infinite` : 'none',
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    transform: 'scale(1.1)',
+                    boxShadow: message.type === 'assistant' 
+                      ? '0 0 25px rgba(184, 134, 11, 0.8)' 
+                      : '0 6px 20px rgba(0, 0, 0, 0.3)',
+                  },
                 }}
               >
-                {message.type === 'user' ? 'U' : '𓂀'}
+                {message.type === 'user' ? '👤' : '𓂀'}
               </Avatar>
               
               <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -389,13 +675,38 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onFileUpload }) => {
                   sx={{
                     p: 3,
                     background: message.type === 'user' 
-                      ? 'rgba(255, 255, 255, 0.08)' 
-                      : 'rgba(184, 134, 11, 0.08)',
+                      ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%)' 
+                      : 'linear-gradient(135deg, rgba(184, 134, 11, 0.12) 0%, rgba(218, 165, 32, 0.06) 100%)',
                     border: message.type === 'user'
-                      ? '1px solid rgba(255, 255, 255, 0.1)'
-                      : '1px solid rgba(184, 134, 11, 0.2)',
-                    borderRadius: 3,
-                    backdropFilter: 'blur(20px)',
+                      ? '1px solid rgba(255, 255, 255, 0.15)'
+                      : '1px solid rgba(184, 134, 11, 0.25)',
+                    borderRadius: 4,
+                    backdropFilter: 'blur(25px)',
+                    boxShadow: message.type === 'user'
+                      ? '0 8px 32px rgba(0, 0, 0, 0.1)'
+                      : '0 8px 32px rgba(184, 134, 11, 0.15)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: message.type === 'user'
+                        ? '0 12px 48px rgba(0, 0, 0, 0.15)'
+                        : '0 12px 48px rgba(184, 134, 11, 0.25)',
+                      border: message.type === 'user'
+                        ? '1px solid rgba(255, 255, 255, 0.2)'
+                        : '1px solid rgba(184, 134, 11, 0.4)',
+                    },
+                    '&::before': message.type === 'assistant' ? {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: '-100%',
+                      width: '100%',
+                      height: '100%',
+                      background: 'linear-gradient(90deg, transparent, rgba(184, 134, 11, 0.1), transparent)',
+                      animation: `${shimmerText} 3s ease-in-out infinite`,
+                    } : {},
                   }}
                 >
                   {message.attachedFile && (
@@ -413,8 +724,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onFileUpload }) => {
                   
                   <Typography
                     sx={{
-                      color: 'rgba(255, 255, 255, 0.9)',
-                      lineHeight: 1.6,
+                      color: 'rgba(255, 255, 255, 0.95)',
+                      lineHeight: 1.7,
+                      fontSize: '1rem',
+                      fontWeight: message.type === 'assistant' ? 400 : 500,
+                      letterSpacing: '0.01em',
+                      textShadow: message.type === 'assistant' 
+                        ? '0 1px 3px rgba(0, 0, 0, 0.3)'
+                        : 'none',
+                      position: 'relative',
+                      zIndex: 1,
                     }}
                   >
                     {message.content}
@@ -442,8 +761,20 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onFileUpload }) => {
       <Box
         sx={{
           p: 3,
-          background: 'rgba(255, 255, 255, 0.02)',
-          borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+          background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(184, 134, 11, 0.02) 100%)',
+          borderTop: '1px solid rgba(184, 134, 11, 0.15)',
+          backdropFilter: 'blur(20px)',
+          position: 'relative',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: '1px',
+            background: 'linear-gradient(90deg, transparent, rgba(184, 134, 11, 0.5), transparent)',
+            animation: `${shimmerText} 4s ease-in-out infinite`,
+          },
         }}
       >
         {/* File Attachment Preview */}
@@ -454,9 +785,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onFileUpload }) => {
               label={attachedFile.name}
               onDelete={() => setAttachedFile(null)}
               sx={{
-                background: 'rgba(76, 175, 80, 0.2)',
-                color: 'rgba(255, 255, 255, 0.9)',
-                border: '1px solid rgba(76, 175, 80, 0.3)',
+                background: 'linear-gradient(135deg, rgba(76, 175, 80, 0.25), rgba(56, 142, 60, 0.15))',
+                color: 'rgba(255, 255, 255, 0.95)',
+                border: '1px solid rgba(76, 175, 80, 0.4)',
+                backdropFilter: 'blur(10px)',
+                animation: `${pulseGold} 2s ease-in-out infinite`,
+                '& .MuiChip-deleteIcon': {
+                  color: 'rgba(255, 255, 255, 0.8)',
+                  '&:hover': {
+                    color: 'rgba(255, 255, 255, 1)',
+                  },
+                },
               }}
             />
           </Box>
@@ -470,9 +809,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onFileUpload }) => {
               label={`Dataset: ${datasets?.find(d => d.id === selectedDataset)?.name || 'Selected'}`}
               onDelete={() => setSelectedDataset(null)}
               sx={{
-                background: 'rgba(33, 150, 243, 0.2)',
-                color: 'rgba(255, 255, 255, 0.9)',
-                border: '1px solid rgba(33, 150, 243, 0.3)',
+                background: 'linear-gradient(135deg, rgba(184, 134, 11, 0.25), rgba(218, 165, 32, 0.15))',
+                color: 'rgba(255, 255, 255, 0.95)',
+                border: '1px solid rgba(184, 134, 11, 0.4)',
+                backdropFilter: 'blur(10px)',
+                animation: `${pulseGold} 2s ease-in-out infinite`,
+                '& .MuiChip-deleteIcon': {
+                  color: 'rgba(255, 255, 255, 0.8)',
+                  '&:hover': {
+                    color: 'rgba(255, 255, 255, 1)',
+                  },
+                },
               }}
             />
           </Box>
@@ -505,7 +852,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onFileUpload }) => {
             maxRows={4}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Ask me about your data..."
+            placeholder="Ask me about your data... 𓂀"
             onKeyPress={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -514,22 +861,42 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onFileUpload }) => {
             }}
             sx={{
               '& .MuiOutlinedInput-root': {
-                background: 'rgba(255, 255, 255, 0.05)',
-                borderRadius: 3,
+                background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(184, 134, 11, 0.03) 100%)',
+                borderRadius: 4,
+                backdropFilter: 'blur(15px)',
+                transition: 'all 0.3s ease',
                 '& fieldset': {
-                  borderColor: 'rgba(255, 255, 255, 0.2)',
+                  borderColor: 'rgba(184, 134, 11, 0.25)',
+                  borderWidth: '1.5px',
+                },
+                '&:hover': {
+                  background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(184, 134, 11, 0.06) 100%)',
+                  transform: 'translateY(-1px)',
+                  boxShadow: '0 8px 25px rgba(184, 134, 11, 0.15)',
                 },
                 '&:hover fieldset': {
-                  borderColor: 'rgba(184, 134, 11, 0.5)',
+                  borderColor: 'rgba(184, 134, 11, 0.6)',
+                  boxShadow: '0 0 0 1px rgba(184, 134, 11, 0.2)',
+                },
+                '&.Mui-focused': {
+                  background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(184, 134, 11, 0.08) 100%)',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 12px 35px rgba(184, 134, 11, 0.25)',
                 },
                 '&.Mui-focused fieldset': {
                   borderColor: '#DAA520',
+                  borderWidth: '2px',
+                  boxShadow: '0 0 0 2px rgba(184, 134, 11, 0.15)',
                 },
               },
               '& .MuiInputBase-input': {
-                color: 'rgba(255, 255, 255, 0.9)',
+                color: 'rgba(255, 255, 255, 0.95)',
+                fontSize: '1rem',
+                lineHeight: 1.6,
+                padding: '16px',
                 '&::placeholder': {
-                  color: 'rgba(255, 255, 255, 0.5)',
+                  color: 'rgba(255, 255, 255, 0.6)',
+                  fontStyle: 'italic',
                 },
               },
             }}
@@ -539,18 +906,36 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onFileUpload }) => {
             onClick={handleSend}
             disabled={!inputValue.trim()}
             sx={{
-              background: inputValue.trim() ? 'linear-gradient(135deg, #DAA520, #B8860B)' : 'rgba(255, 255, 255, 0.1)',
+              width: 56,
+              height: 56,
+              background: inputValue.trim() 
+                ? 'linear-gradient(135deg, #DAA520, #B8860B, #FFD700)' 
+                : 'rgba(255, 255, 255, 0.08)',
               color: 'white',
+              border: inputValue.trim()
+                ? '2px solid rgba(184, 134, 11, 0.3)'
+                : '2px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: 3,
+              transition: 'all 0.3s ease',
+              animation: inputValue.trim() ? `${pulseGold} 2s ease-in-out infinite` : 'none',
               '&:hover': {
-                background: inputValue.trim() ? 'linear-gradient(135deg, #B8860B, #DAA520)' : 'rgba(255, 255, 255, 0.1)',
+                background: inputValue.trim() 
+                  ? 'linear-gradient(135deg, #FFD700, #DAA520, #B8860B)' 
+                  : 'rgba(255, 255, 255, 0.12)',
+                transform: inputValue.trim() ? 'scale(1.05)' : 'scale(1.02)',
+                boxShadow: inputValue.trim()
+                  ? '0 8px 25px rgba(184, 134, 11, 0.4)'
+                  : '0 4px 15px rgba(255, 255, 255, 0.1)',
               },
               '&.Mui-disabled': {
                 background: 'rgba(255, 255, 255, 0.05)',
                 color: 'rgba(255, 255, 255, 0.3)',
+                border: '2px solid rgba(255, 255, 255, 0.05)',
+                animation: 'none',
               },
             }}
           >
-            <SendIcon />
+            <SendIcon sx={{ fontSize: '1.2rem' }} />
           </IconButton>
         </Box>
       </Box>
